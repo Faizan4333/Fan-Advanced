@@ -946,27 +946,40 @@
             }
         });
 
-        // Basic BLE mapping to keep previous functionality alive
+        // Advanced BLE integration (Nasser-FanAPP logic)
         const bleBtn = document.getElementById('bleConnectBtn');
         const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-        const char1Uuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+        // Nasser-FanAPP uses beb5483e for commands and 9b1c7130 for ADC telemetry
+        const charCmdUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
         const charAdcUuid = "9b1c7130-9b49-411a-ab57-37c26fb43015";
         
-        let bluetoothDevice, char1, charAdc;
+        let bluetoothDevice, charCmd, charAdc;
+        let isConnected = false;
+        let isAuto = false;
+
+        async function sendCmd(cmdStr) {
+            if(!charCmd) return;
+            const data = new TextEncoder().encode(cmdStr);
+            try {
+                await charCmd.writeValue(data);
+                console.log("Sent BLE:", cmdStr);
+            } catch(e) { console.error("CMD error:", e); }
+        }
 
         bleBtn.addEventListener('click', async () => {
-            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-                bluetoothDevice.gatt.disconnect();
+            if (isConnected) {
+                if(bluetoothDevice) bluetoothDevice.gatt.disconnect();
                 return;
             }
             try {
                 bleBtn.innerText = "Scanning...";
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'ESP32_Quad_Fan' }],
+                    filters: [{ name: 'ESP32_Dual_Fan' }],
                     optionalServices: [serviceUuid]
                 });
                 
                 bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+                    isConnected = false;
                     bleBtn.innerText = "Connect";
                     bleBtn.style.color = "#3b82f6";
                     bleBtn.style.borderColor = "#3b82f6";
@@ -976,20 +989,45 @@
                 const server = await bluetoothDevice.gatt.connect();
                 const service = await server.getPrimaryService(serviceUuid);
                 
-                char1 = await service.getCharacteristic(char1Uuid);
+                charCmd = await service.getCharacteristic(charCmdUuid);
                 charAdc = await service.getCharacteristic(charAdcUuid);
                 
                 await charAdc.startNotifications();
                 charAdc.addEventListener('characteristicvaluechanged', (e) => {
                     const value = new TextDecoder().decode(e.target.value);
-                    const adcs = value.split(',');
-                    if (adcs.length === 5) {
-                        document.getElementById('valTempCtrl').innerText = adcs[0] + " °C";
-                        document.getElementById('valTempCar').innerText = adcs[1] + " °C";
-                        document.getElementById('valVolt').innerText = (adcs[2]/100).toFixed(1) + " V";
+                    // Format: "T1,T2,V1,V2,AC,Auto"
+                    const parts = value.split(',');
+                    if (parts.length >= 6) {
+                        document.getElementById('valTempCtrl').innerText = parts[0] + " °C";
+                        document.getElementById('valTempCar').innerText = parts[1] + " °C";
+                        document.getElementById('valVolt').innerText = parseFloat(parts[2]).toFixed(1) + " V";
+                        
+                        const acInd = document.getElementById('valAC');
+                        if(parts[4] === "1") {
+                            acInd.innerText = "ON";
+                            acInd.className = "status-value val-on";
+                        } else {
+                            acInd.innerText = "OFF";
+                            acInd.className = "status-value";
+                            acInd.style.color = "var(--accent-red)";
+                        }
+
+                        const espAuto = parts[5] === "1";
+                        if (espAuto !== isAuto) {
+                            isAuto = espAuto;
+                            const modes = document.querySelectorAll('.mode-btn');
+                            if(isAuto) {
+                                modes[0].classList.add('active'); // 2x FAN (Auto)
+                                modes[1].classList.remove('active');
+                            } else {
+                                modes[0].classList.remove('active');
+                                modes[1].classList.add('active'); // 1x FAN (Manual)
+                            }
+                        }
                     }
                 });
 
+                isConnected = true;
                 bleBtn.innerText = "Disconnect";
                 bleBtn.style.color = "#ef4444";
                 bleBtn.style.borderColor = "#ef4444";
@@ -999,21 +1037,95 @@
             }
         });
 
-        // Mock write logic for Fan 1 using the Stage 1 input
-        const s1f1 = document.getElementById('s1-f1-spd');
-        if(s1f1) {
-            s1f1.addEventListener('change', async (e) => {
-                document.getElementById('valFan1').innerText = e.target.value + " %";
-                if(!char1) return;
-                try {
-                    // map percentage to 0-255 pwm
-                    let pwm = Math.floor((parseInt(e.target.value) / 100) * 255);
-                    if(pwm > 255) pwm = 255;
-                    const data = new TextEncoder().encode(pwm.toString());
-                    await char1.writeValue(data);
-                } catch(err) { console.error(err); }
+        // Mode Buttons (Auto Toggle)
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        modeBtns[0].addEventListener('click', () => { sendCmd("A:1"); modeBtns[0].classList.add('active'); modeBtns[1].classList.remove('active'); });
+        modeBtns[1].addEventListener('click', () => { sendCmd("A:0"); modeBtns[1].classList.add('active'); modeBtns[0].classList.remove('active'); });
+
+        // Save All Changes -> Generate M: rules from Stages
+        const saveBtn = document.querySelector('.btn-primary');
+        saveBtn.addEventListener('click', async () => {
+            saveBtn.innerText = "SAVING...";
+            const rows = document.querySelectorAll('.stage-row');
+            let ruleIdx = 0;
+            
+            for(let i=0; i<rows.length; i++) {
+                const inputs = rows[i].querySelectorAll('input');
+                const f1Spd = inputs[0].value;
+                const f1Temp = inputs[1].value;
+                const f2Spd = inputs[2].value;
+                const f2Temp = inputs[3].value;
+                
+                // Rule 1: If Temp1 (sensor 0) > f1Temp THEN Fan1 (fan 0) = f1Spd
+                if(f1Spd > 0) {
+                    await sendCmd(`M:${ruleIdx},0,0,${f1Temp},0,${Math.floor((f1Spd/100)*255)}`);
+                    ruleIdx++;
+                }
+                
+                // Rule 2: If Temp2 (sensor 1) > f2Temp THEN Fan2 (fan 1) = f2Spd
+                if(f2Spd > 0) {
+                    await sendCmd(`M:${ruleIdx},1,0,${f2Temp},1,${Math.floor((f2Spd/100)*255)}`);
+                    ruleIdx++;
+                }
+            }
+            
+            // Clear remaining rules up to 10
+            for(let i=ruleIdx; i<10; i++) {
+                await sendCmd(`C:${i}`);
+            }
+            
+            setTimeout(() => { saveBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> SAVE ALL CHANGES'; }, 1000);
+        });
+
+        // Fan Tester Logic
+        const allProfiles = [
+            { name: "SPAL Brushless", val: "100,50" },
+            { name: "Mercedes PWM", val: "10,50" },
+            { name: "Bosch", val: "50,50" },
+            { name: "Audi", val: "100,150" },
+            { name: "SPAL High Power (Big)", val: "100,50" }
+        ];
+        
+        let selectedProfileIdx = 0;
+        
+        // Mock dropdown click
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
+        dropdownItems.forEach((item, idx) => {
+            item.addEventListener('click', () => {
+                dropdownItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                selectedProfileIdx = idx;
+                document.querySelector('.dropdown-select span').innerText = item.querySelector('span').innerText;
             });
-        }
+        });
+
+        document.querySelector('.btn-test').addEventListener('click', () => {
+            const p = allProfiles[selectedProfileIdx];
+            const vals = p.val.split(',');
+            sendCmd(`T:0,${vals[0]},${vals[1]}`); // Test Fan 0 by default
+            alert(`Testing ${p.name} on Fan 1 Output`);
+        });
+
+        document.querySelector('.btn-stop').addEventListener('click', () => {
+            sendCmd("X:");
+        });
+        
+        let autoTestIndex = 0;
+        const autoListItems = document.querySelectorAll('.auto-list-item');
+        
+        // Auto Run Animation
+        document.querySelector('.radar').addEventListener('click', () => {
+            if(autoTestIndex >= allProfiles.length) autoTestIndex = 0;
+            
+            autoListItems.forEach(i => i.classList.remove('active'));
+            autoListItems[autoTestIndex].classList.add('active');
+            
+            const p = allProfiles[autoTestIndex];
+            const vals = p.val.split(',');
+            sendCmd(`T:0,${vals[0]},${vals[1]}`);
+            
+            autoTestIndex++;
+        });
     </script>
 </body>
 </html>
