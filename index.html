@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEMEC Fan Controller</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-body: #06090e;
+            --bg-panel: #0d1219;
+            --bg-element: #141b25;
+            --bg-element-hover: #1a2330;
+            --border-color: #1e293b;
+            --border-light: #334155;
+            
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --text-muted: #475569;
+            
+            --accent-blue: #3b82f6;
+            --accent-blue-dim: rgba(59, 130, 246, 0.15);
+            --accent-green: #10b981;
+            --accent-green-dim: rgba(16, 185, 129, 0.15);
+            --accent-red: #ef4444;
+            --accent-red-dim: rgba(239, 68, 68, 0.15);
+            --accent-purple: #8b5cf6;
+            
+            --stage-1: #3b82f6;
+            --stage-2: #10b981;
+            --stage-3: #f59e0b;
+            --stage-4: #8b5cf6;
+            --stage-5: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-hemec {
+            color: var(--text-main);
+        }
+        .logo-c {
+            color: var(--accent-blue);
+            margin-right: 0.5rem;
+        }
+        .logo-text {
+            color: var(--accent-blue);
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .clock {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* LAYOUT */
+        .grid-top {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* LIVE STATUS PANEL */
+        .status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        .status-icon {
+            color: var(--text-dim);
+            width: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .status-value {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.95rem;
+            min-width: 80px;
+            text-align: center;
+            color: var(--text-dim);
+        }
+
+        .val-blue { color: var(--accent-blue); }
+        .val-on { 
+            color: var(--accent-green); 
+            border-color: var(--accent-green);
+            background-color: var(--accent-green-dim);
+        }
+
+        .fan-mode-header {
+            font-size: 0.9rem;
+            color: var(--accent-blue);
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mode-btn {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .mode-btn:hover { background-color: var(--bg-element-hover); }
+
+        .mode-btn.active {
+            background-color: var(--accent-blue-dim);
+            border-color: var(--accent-blue);
+        }
+
+        .mode-btn.active::after {
+            content: '✓';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .mode-icon {
+            display: flex;
+            gap: -5px;
+        }
+
+        .mode-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .mode-info {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        /* SETUP & DIAGNOSTICS */
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .section-num {
+            color: var(--accent-blue);
+            font-weight: 700;
+            margin-right: 0.25rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .dropdown {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dropdown-header {
+            font-size: 0.7rem;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .dropdown-select {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+
+        .dropdown-list {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item.active { background-color: var(--accent-blue-dim); color: var(--accent-blue); }
+
+        .manual-config {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .pwm-input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .pwm-label { font-size: 0.85rem; color: var(--text-dim); }
+
+        .pwm-input-box {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pwm-input-box input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            width: 60px;
+            text-align: right;
+            outline: none;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .hz-pills {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hz-pill {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .hz-pill.active {
+            background-color: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        .info-box {
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        /* Auto Run Section */
+        .auto-run-box {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .auto-title {
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .auto-sub {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+        }
+
+        .radar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid var(--border-light);
+            margin: 0 auto 1.5rem auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            top: 0;
+            left: 50%;
+            background: conic-gradient(from 0deg, transparent 0%, rgba(59,130,246,0.6) 100%);
+            transform-origin: bottom left;
+            animation: sweep 2s linear infinite;
+        }
+
+        @keyframes sweep {
+            100% { transform: rotate(360deg); }
+        }
+
+        .auto-list {
+            text-align: left;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: var(--bg-body);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .auto-list-item { display: flex; align-items: center; gap: 0.5rem; }
+        .auto-list-item.active { color: var(--text-main); }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--text-muted); }
+        .auto-list-item.active .dot { background-color: var(--accent-blue); box-shadow: 0 0 5px var(--accent-blue); }
+
+        .pwm-status {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .pwm-status-icon {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--accent-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-green);
+        }
+
+        .polarity-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .polarity-btn {
+            flex: 1;
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .polarity-btn.active {
+            border-color: var(--accent-purple);
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+
+        .polarity-btn.active::after {
+            content: '✓';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: var(--accent-purple);
+        }
+
+        .polarity-icon { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.25rem; }
+        .polarity-label { font-size: 0.9rem; font-weight: 600; }
+        .polarity-sub { font-size: 0.75rem; color: var(--text-dim); }
+
+        .btn-stop {
+            width: 100%;
+            background-color: var(--accent-red-dim);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .btn-test {
+            width: 100%;
+            background-color: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-main);
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        /* STAGE OPERATIONS */
+        .stage-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.75rem;
+        }
+
+        .stage-table th {
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            padding-bottom: 0.5rem;
+        }
+
+        .stage-row {
+            background-color: var(--bg-element);
+        }
+
+        .stage-row td {
+            padding: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .stage-row td:first-child {
+            border-left: 1px solid var(--border-color);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+        
+        .stage-row td:last-child {
+            border-right: 1px solid var(--border-color);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* Stage Colors */
+        .stage-1 td { border-color: var(--stage-1) !important; }
+        .stage-2 td { border-color: var(--stage-2) !important; }
+        .stage-3 td { border-color: var(--stage-3) !important; }
+        .stage-4 td { border-color: var(--stage-4) !important; }
+        .stage-5 td { border-color: var(--stage-5) !important; }
+
+        .stage-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .stage-1 .stage-title { color: var(--stage-1); }
+        .stage-2 .stage-title { color: var(--stage-2); }
+        .stage-3 .stage-title { color: var(--stage-3); }
+        .stage-4 .stage-title { color: var(--stage-4); }
+        .stage-5 .stage-title { color: var(--stage-5); }
+
+        .stage-sub {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .input-box {
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100px;
+            margin: 0 auto;
+            padding-left: 1rem;
+        }
+
+        .input-box input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            width: 40px;
+            outline: none;
+            font-family: monospace;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .input-box input::-webkit-outer-spin-button,
+        .input-box input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-arrows {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--border-light);
+        }
+
+        .arrow-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            height: 18px;
+            width: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .arrow-btn:hover { background: rgba(255,255,255,0.1); }
+        .arrow-btn:first-child { border-bottom: 1px solid var(--border-light); border-top-right-radius: 6px; }
+        .arrow-btn:last-child { border-bottom-right-radius: 6px; }
+
+        /* ACTION BAR */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-action {
+            flex: 1;
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-main);
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-action:hover { background: rgba(255,255,255,0.05); }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            border: none;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span class="logo-hemec">HEME<span class="logo-c">C</span></span> 
+            <span class="logo-text">FAN CONTROLLER</span>
+        </div>
+        <div class="clock">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span id="clockDisplay">12:30 PM</span>
+            <button id="bleConnectBtn" style="margin-left:20px; padding: 5px 15px; border-radius: 20px; border: 1px solid #3b82f6; background: transparent; color: #3b82f6; cursor: pointer;">Connect</button>
+        </div>
+    </header>
+
+    <div class="grid-top">
+        <!-- LIVE STATUS PANEL -->
+        <div class="panel">
+            <div class="panel-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                LIVE STATUS & MODE
+            </div>
+            
+            <div class="status-list">
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">⚙️</div> Current Fan Type</div>
+                    <div class="status-value val-blue">SPAL</div>
+                </div>
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">🌀</div> Fan 1 Current Speed</div>
+                    <div class="status-value val-blue" id="valFan1">0 %</div>
+                </div>
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">🌀</div> Fan 2 Current Speed</div>
+                    <div class="status-value val-blue" id="valFan2">0 %</div>
+                </div>
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">❄️</div> AC Line</div>
+                    <div class="status-value val-on" id="valAC">ON</div>
+                </div>
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">🌡️</div> Controller Temp Sensor</div>
+                    <div class="status-value val-blue" id="valTempCtrl">48 °C</div>
+                </div>
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">⚡</div> Voltage</div>
+                    <div class="status-value val-blue" id="valVolt">13.6 V</div>
+                </div>
+                <div class="status-row">
+                    <div class="status-label"><div class="status-icon">🚗</div> Car Temp</div>
+                    <div class="status-value val-blue" id="valTempCar">86 °C</div>
+                </div>
+            </div>
+
+            <div class="fan-mode-header">FAN MODE</div>
+            <div class="mode-buttons">
+                <div class="mode-btn active">
+                    <div class="mode-icon">🌀🌀</div>
+                    <div class="mode-text">2x FAN TOGETHER</div>
+                </div>
+                <div class="mode-btn">
+                    <div class="mode-icon">🌀</div>
+                    <div class="mode-text">1x FAN EACH</div>
+                </div>
+            </div>
+            <div class="mode-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                If "2x FAN TOGETHER" is selected, Fan 2 settings will disappear.
+            </div>
+        </div>
+
+        <!-- SETUP & DIAGNOSTICS -->
+        <div class="panel">
+            <div class="panel-header">
+                SETUP & DIAGNOSTICS
+            </div>
+
+            <div class="setup-grid">
+                <!-- Left Setup Col -->
+                <div>
+                    <div class="section-title"><span class="section-num">1:</span> SELECT FAN TYPE</div>
+                    <div class="dropdown">
+                        <div class="dropdown-header">CHOOSE FAN TYPE</div>
+                        <div class="dropdown-select">
+                            <span>🌀 SPAL Brushless</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="dropdown-list">
+                            <div class="dropdown-item active"><span>🌀 SPAL Brushless</span> ✓</div>
+                            <div class="dropdown-item"><span>⭕ Mercedes PWM</span></div>
+                            <div class="dropdown-item"><span>⬛ Bosch</span></div>
+                            <div class="dropdown-item"><span>♾️ Audi</span></div>
+                            <div class="dropdown-item"><span>☢️ SPAL High Power (Big)</span></div>
+                        </div>
+                    </div>
+
+                    <div class="section-title"><span class="section-num">2:</span> MANUAL CONFIGURATION</div>
+                    <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem;">Set your own parameters manually.</p>
+                    
+                    <div class="manual-config">
+                        <div class="dropdown-header">PWM FREQUENCY (Hz)</div>
+                        <div class="pwm-input-row">
+                            <span class="pwm-label">Enter PWM Frequency</span>
+                            <div class="pwm-input-box">
+                                <input type="text" value="25000"> Hz
+                            </div>
+                        </div>
+                        <div class="hz-pills">
+                            <div class="hz-pill">200 Hz</div>
+                            <div class="hz-pill">1 kHz</div>
+                            <div class="hz-pill">5 kHz</div>
+                            <div class="hz-pill">10 kHz</div>
+                            <div class="hz-pill active">25 kHz</div>
+                            <div class="hz-pill">30 kHz</div>
+                        </div>
+                        
+                        <div class="info-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            Higher frequency = smoother operation, lower noise.<br>Recommended: 20kHz - 25kHz for brushless fans.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Setup Col -->
+                <div>
+                    <div class="section-title">AUTO RUN</div>
+                    <div class="auto-run-box">
+                        <div class="auto-title">Auto Detect in Progress...</div>
+                        <div class="auto-sub">Testing each fan type one by one.</div>
+                        <div class="radar">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M12 2v20M17 5l-10 14M22 12H2M19 17L5 7"/></svg>
+                            <div class="radar-sweep"></div>
+                        </div>
+                        <div class="auto-list">
+                            <div class="auto-list-item active"><div class="dot"></div> Scanning SPAL Brushless...</div>
+                            <div class="auto-list-item"><div class="dot"></div> Waiting Mercedes PWM...</div>
+                            <div class="auto-list-item"><div class="dot"></div> Waiting Bosch...</div>
+                            <div class="auto-list-item"><div class="dot"></div> Waiting Audi...</div>
+                            <div class="auto-list-item"><div class="dot"></div> Waiting SPAL High Power (Big)...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="pwm-status">
+                        <div class="pwm-status-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="color:var(--accent-green); font-size:0.85rem; font-weight:700;">PWM Signal Detected</div>
+                            <div style="font-size:0.75rem; color:var(--text-dim);">Valid PWM signal received.<br>Signal OK</div>
+                        </div>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </div>
+
+                    <div style="display:flex; gap:1rem;">
+                        <div style="flex:1;">
+                            <div class="dropdown-header">POLARITY</div>
+                            <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:0.5rem;">Select Polarity</div>
+                            <div class="polarity-row">
+                                <div class="polarity-btn active">
+                                    <div class="polarity-icon">+</div>
+                                    <div class="polarity-label">POSITIVE</div>
+                                    <div class="polarity-sub">(Normal)</div>
+                                </div>
+                                <div class="polarity-btn">
+                                    <div class="polarity-icon">-</div>
+                                    <div class="polarity-label">NEGATIVE</div>
+                                    <div class="polarity-sub">(Reverse)</div>
+                                </div>
+                            </div>
+                            <div class="info-box" style="margin-top:0; padding:0.75rem;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span>Select the correct polarity for proper fan operation.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button class="btn-stop"><div style="width:12px; height:12px; background:currentColor;"></div> STOP AUTO RUN</button>
+                        <button class="btn-test"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> TEST FAN OUTPUT</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAGE BASED OPERATIONS -->
+    <div class="panel">
+        <div class="panel-header">STAGE-BASED OPERATIONS</div>
+        <table class="stage-table">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding-left:1rem;">Stage</th>
+                    <th>Fan 1 Speed</th>
+                    <th>Fan 1 Temp</th>
+                    <th>Fan 2 Speed</th>
+                    <th>Fan 2 Temp</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Row 1 -->
+                <tr class="stage-row stage-1">
+                    <td>
+                        <div class="stage-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> 1st</div>
+                        <div class="stage-sub val-blue">SPEED</div>
+                    </td>
+                    <td><div class="input-box"><input type="number" id="s1-f1-spd" value="30"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="40">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="30"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="40">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                </tr>
+                <!-- Row 2 -->
+                <tr class="stage-row stage-2">
+                    <td>
+                        <div class="stage-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> 2nd</div>
+                        <div class="stage-sub" style="color:var(--stage-2);">SPEED</div>
+                    </td>
+                    <td><div class="input-box"><input type="number" value="50"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="70">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="50"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="70">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                </tr>
+                <!-- Row 3 -->
+                <tr class="stage-row stage-3">
+                    <td>
+                        <div class="stage-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> 3rd</div>
+                        <div class="stage-sub" style="color:var(--stage-3);">SPEED</div>
+                    </td>
+                    <td><div class="input-box"><input type="number" value="70"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="90">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="70"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="90">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                </tr>
+                <!-- Row 4 -->
+                <tr class="stage-row stage-4">
+                    <td>
+                        <div class="stage-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> 4th</div>
+                        <div class="stage-sub" style="color:var(--stage-4);">SPEED</div>
+                    </td>
+                    <td><div class="input-box"><input type="number" value="85"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="100">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="85"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="100">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                </tr>
+                <!-- Row 5 -->
+                <tr class="stage-row stage-5">
+                    <td>
+                        <div class="stage-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> 5th</div>
+                        <div class="stage-sub" style="color:var(--stage-5);">SPEED</div>
+                    </td>
+                    <td><div class="input-box"><input type="number" value="100"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="110">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="100"><div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                    <td><div class="input-box"><input type="number" value="110">C<div class="input-arrows"><button class="arrow-btn">▲</button><button class="arrow-btn">▼</button></div></div></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="action-bar">
+            <button class="btn-action"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> RESET TO DEFAULT</button>
+            <button class="btn-action"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.27l-3.26-3.26"/></svg> READ CURRENT DATA</button>
+            <button class="btn-action btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> SAVE ALL CHANGES</button>
+        </div>
+    </div>
+
+    <script>
+        // Clock updater
+        setInterval(() => {
+            const now = new Date();
+            let hours = now.getHours();
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('clockDisplay').innerText = `${hours}:${minutes} ${ampm}`;
+        }, 1000);
+
+        // Arrow button logic for inputs
+        document.querySelectorAll('.input-box').forEach(box => {
+            const input = box.querySelector('input');
+            const btns = box.querySelectorAll('.arrow-btn');
+            if(btns.length === 2) {
+                btns[0].addEventListener('click', () => { input.value = parseInt(input.value) + 1; });
+                btns[1].addEventListener('click', () => { input.value = parseInt(input.value) - 1; });
+            }
+        });
+
+        // Basic BLE mapping to keep previous functionality alive
+        const bleBtn = document.getElementById('bleConnectBtn');
+        const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        const char1Uuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+        const charAdcUuid = "9b1c7130-9b49-411a-ab57-37c26fb43015";
+        
+        let bluetoothDevice, char1, charAdc;
+
+        bleBtn.addEventListener('click', async () => {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+                return;
+            }
+            try {
+                bleBtn.innerText = "Scanning...";
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'ESP32_Quad_Fan' }],
+                    optionalServices: [serviceUuid]
+                });
+                
+                bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+                    bleBtn.innerText = "Connect";
+                    bleBtn.style.color = "#3b82f6";
+                    bleBtn.style.borderColor = "#3b82f6";
+                });
+                
+                bleBtn.innerText = "Connecting...";
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService(serviceUuid);
+                
+                char1 = await service.getCharacteristic(char1Uuid);
+                charAdc = await service.getCharacteristic(charAdcUuid);
+                
+                await charAdc.startNotifications();
+                charAdc.addEventListener('characteristicvaluechanged', (e) => {
+                    const value = new TextDecoder().decode(e.target.value);
+                    const adcs = value.split(',');
+                    if (adcs.length === 5) {
+                        document.getElementById('valTempCtrl').innerText = adcs[0] + " °C";
+                        document.getElementById('valTempCar').innerText = adcs[1] + " °C";
+                        document.getElementById('valVolt').innerText = (adcs[2]/100).toFixed(1) + " V";
+                    }
+                });
+
+                bleBtn.innerText = "Disconnect";
+                bleBtn.style.color = "#ef4444";
+                bleBtn.style.borderColor = "#ef4444";
+            } catch (error) {
+                console.error(error);
+                bleBtn.innerText = "Failed";
+            }
+        });
+
+        // Mock write logic for Fan 1 using the Stage 1 input
+        const s1f1 = document.getElementById('s1-f1-spd');
+        if(s1f1) {
+            s1f1.addEventListener('change', async (e) => {
+                document.getElementById('valFan1').innerText = e.target.value + " %";
+                if(!char1) return;
+                try {
+                    // map percentage to 0-255 pwm
+                    let pwm = Math.floor((parseInt(e.target.value) / 100) * 255);
+                    if(pwm > 255) pwm = 255;
+                    const data = new TextEncoder().encode(pwm.toString());
+                    await char1.writeValue(data);
+                } catch(err) { console.error(err); }
+            });
+        }
+    </script>
+</body>
+</html>
