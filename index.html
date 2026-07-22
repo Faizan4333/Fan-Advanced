@@ -1460,17 +1460,34 @@
         }
 
         function handleTelemetry(e) {
-            const val = new TextDecoder().decode(e.target.value);
-            const p = val.split(',');
-            if (p.length >= 6) {
-                document.getElementById('sens-temp1').innerText = p[0] + " °C";
-                document.getElementById('sens-temp2').innerText = p[1] + " °C";
-                document.getElementById('sens-speedo').innerText = parseFloat(p[2]).toFixed(1) + " V";
-                document.getElementById('sens-ecm').innerText = parseFloat(p[3]).toFixed(1) + " V";
+            const raw = new TextDecoder().decode(e.target.value);
+            const p = raw.split(',');
+            if (p.length >= 5) {
+                const adc0 = parseInt(p[0]); // Coolant 1
+                const adc1 = parseInt(p[1]); // Coolant 2
+                const adc2 = parseInt(p[2]); // Speedo voltage
+                const adc3 = parseInt(p[3]); // ECM voltage
+                const adc4 = parseInt(p[4]); // AC line
+
+                // Convert ADC (0-4095, 3.3V ref) to voltage
+                const toVolts = (adc) => ((adc / 4095) * 3.3).toFixed(2);
+
+                // Simple NTC approximation for coolant: map 0-4095 to 0-150 °C
+                // (Tune the slope once you have the actual sensor curve)
+                const toTemp = (adc) => Math.round((adc / 4095) * 150);
+
+                document.getElementById('sens-temp1').innerText = toTemp(adc0) + " °C";
+                document.getElementById('sens-temp2').innerText = toTemp(adc1) + " °C";
+                document.getElementById('sens-speedo').innerText = toVolts(adc2) + " V";
+                document.getElementById('sens-ecm').innerText   = toVolts(adc3) + " V";
 
                 const ac = document.getElementById('sens-ac');
-                if (p[4] === "1") { ac.innerText = "ON"; ac.className = "status-val val-ac"; }
-                else { ac.innerText = "OFF"; ac.className = "status-val val-ac off"; }
+                // AC is ON when its ADC value is above mid-scale (~1.65 V = ~2048 counts)
+                if (adc4 > 2048) { ac.innerText = "ON";  ac.className = "status-val val-ac"; }
+                else             { ac.innerText = "OFF"; ac.className = "status-val val-ac off"; }
+
+                // Also update fan speed displays if the ESP32 sends them
+                // (p[5] onward reserved for future fan RPM data)
             }
         }
 
