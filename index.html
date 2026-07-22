@@ -1510,15 +1510,16 @@
                     return;
                 }
                 const p = data.split(',');
-                if (p.length === 6) {
-                    const ruleIdx = parseInt(p[0]);
-                    const sens = parseInt(p[1]);
-                    const triggerVal = parseInt(p[3]);
-                    const fanIdx = parseInt(p[4]) + 1; // 0-based to 1-based (f1..f4)
-                    const pwm = parseInt(p[5]);
-                    const spd = Math.round((pwm / 255) * 100);
+                // New format: R:stageIdx,fanIdx,sens,condVal,pwm (5 parts)
+                if (p.length === 5) {
+                    const stageIdx  = parseInt(p[0]);
+                    const fanIdx    = parseInt(p[1]) + 1; // 0-based to 1-based (f1..f4)
+                    const sens      = parseInt(p[2]);
+                    const condVal   = parseInt(p[3]);
+                    const pwm       = parseInt(p[4]);
+                    const spd       = Math.round((pwm / 255) * 100);
 
-                    while (stages.length <= ruleIdx) {
+                    while (stages.length <= stageIdx) {
                         stages.push({
                             f1: { spd: 0, sens: 0, val: 0 },
                             f2: { spd: 0, sens: 0, val: 0 },
@@ -1526,7 +1527,7 @@
                             f4: { spd: 0, sens: 0, val: 0 }
                         });
                     }
-                    stages[ruleIdx][`f${fanIdx}`] = { spd: spd, sens: sens, val: triggerVal };
+                    stages[stageIdx][`f${fanIdx}`] = { spd, sens, val: condVal };
                 }
             }
         }
@@ -1558,29 +1559,28 @@
             sendCmd("A:0");
         });
 
-        // SAVE STAGES -> GENERATE M: COMMANDS
+        // SAVE STAGES -> GENERATE M: COMMANDS (new protocol: M:stageIdx,fanIdx,sens,condVal,pwm)
         async function saveStages() {
             const btn = document.getElementById('save-stages-btn');
             btn.innerText = "Saving...";
             btn.disabled = true;
 
-            let ruleIdx = 0;
+            // Step 1: Wipe ALL existing rules from ESP32 flash with one command
+            await sendCmd("C:ALL");
+            await new Promise(r => setTimeout(r, 150));
+
+            // Step 2: Save every stage/fan combination explicitly with its REAL indices
             for (let i = 0; i < stages.length; i++) {
                 for (let f = 1; f <= sysMode; f++) {
                     const fanData = stages[i][`f${f}`];
-                    if (fanData.spd > 0) {
-                        let pwm = Math.floor((fanData.spd / 100) * 255);
-                        await sendCmd(`M:${ruleIdx},${fanData.sens},0,${fanData.val},${f - 1},${pwm}`);
-                        ruleIdx++;
-                        if (ruleIdx >= 10) break;
-                    }
+                    let pwm = Math.floor((fanData.spd / 100) * 255);
+                    // Format: M:stageIdx,fanIdx,sens,condVal,pwm
+                    await sendCmd(`M:${i},${f - 1},${fanData.sens},${fanData.val},${pwm}`);
+                    await new Promise(r => setTimeout(r, 30));
                 }
-                if (ruleIdx >= 10) break;
             }
 
-            for (let i = ruleIdx; i < 10; i++) await sendCmd(`C:${i}`);
-
-            // Also save to localStorage so settings persist on refresh
+            // Also save to localStorage as fallback
             localStorage.setItem('fanStages', JSON.stringify(stages));
             localStorage.setItem('fanMode', sysMode);
             localStorage.setItem('fanSync', isSync);
@@ -1596,11 +1596,9 @@
                 btn.style.color = "";
             }, 2500);
 
-            // Toast notification
             showToast("Settings saved to ESP32 " + (isConnected ? "✔" : "(offline — localStorage only)"));
-
-            if (ruleIdx >= 10) showToast("Note: Max 10 rules. Some stages were dropped.");
         }
+
 
         // TESTER LOGIC
         const allProfiles = [
