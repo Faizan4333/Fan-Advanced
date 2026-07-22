@@ -1164,6 +1164,11 @@
             const slider = document.getElementById(`slider-override-${fanIdx}`);
             slider.style.background = `linear-gradient(to right, #312C51 ${val}%, rgba(49, 44, 81, 0.15) ${val}%)`;
 
+            // Persist slider position to localStorage
+            const savedSliders = JSON.parse(localStorage.getItem('fanSliders') || '{}');
+            savedSliders[fanIdx] = parseInt(val);
+            localStorage.setItem('fanSliders', JSON.stringify(savedSliders));
+
             // Scale 0-100% to 0-255 for the ESP32
             let pwmVal = Math.round((val / 100) * 255);
             sendCmd(`M:${fanIdx}:${pwmVal}`);
@@ -1173,6 +1178,7 @@
         // UI RENDERERS
         function setSysMode(mode) {
             sysMode = mode;
+            localStorage.setItem('fanMode', mode);
             document.getElementById('btn-mode-2').classList.toggle('active', mode === 2);
             document.getElementById('btn-mode-4').classList.toggle('active', mode === 4);
 
@@ -1197,7 +1203,7 @@
 
             renderStageTable();
             renderDashboardSliders();
-            sendCmd("S:" + mode);
+            sendCmd("N:" + mode); // Save fan count to ESP32 NVS
         }
 
         function addStage() {
@@ -1343,9 +1349,48 @@
             btns[1].classList.toggle('active', val === 1);
         }
 
-        // Initialize UI
-        setSysMode(2);
-        renderDashboardSliders();
+        // Initialize UI — restore from localStorage if available
+        (function restoreFromLocalStorage() {
+            const savedMode = parseInt(localStorage.getItem('fanMode')) || 2;
+            const savedSync = localStorage.getItem('fanSync');
+            const savedStages = localStorage.getItem('fanStages');
+            const savedSliders = JSON.parse(localStorage.getItem('fanSliders') || '{}');
+
+            // Restore system mode (2 or 4 fans)
+            setSysMode(savedMode);
+
+            // Restore sync/independent mode
+            if (savedSync === 'false') {
+                isSync = false;
+                document.getElementById('btn-sync').classList.remove('active');
+                document.getElementById('btn-indep').classList.add('active');
+            } else {
+                isSync = true;
+                document.getElementById('btn-sync').classList.add('active');
+                document.getElementById('btn-indep').classList.remove('active');
+            }
+
+            // Restore stages
+            if (savedStages) {
+                try { stages = JSON.parse(savedStages); renderStageTable(); } catch(e) {}
+            }
+
+            // Restore slider positions
+            if (Object.keys(savedSliders).length > 0) {
+                // Sliders are rendered by setSysMode -> renderDashboardSliders,
+                // so they exist in the DOM now. Restore each one.
+                for (let i = 1; i <= savedMode; i++) {
+                    const sliderVal = savedSliders[i] || 0;
+                    const slider = document.getElementById(`slider-override-${i}`);
+                    const valEl = document.getElementById(`val-override-${i}`);
+                    if (slider && sliderVal > 0) {
+                        slider.value = sliderVal;
+                        valEl.innerText = sliderVal + '%';
+                        slider.style.background = `linear-gradient(to right, #312C51 ${sliderVal}%, rgba(49, 44, 81, 0.15) ${sliderVal}%)`;
+                    }
+                }
+            }
+        })();
 
         // UUIDs
         const serviceUuid = "4fafc203-1fb5-459e-8fcc-c5c9c331914b";
@@ -1432,10 +1477,36 @@
         function handleCmdNotify(e) {
             const val = new TextDecoder().decode(e.target.value);
             console.log("BLE RCV:", val);
+
+            // N: = Fan count (e.g. "N:4")
+            if (val.startsWith("N:")) {
+                const mode = parseInt(val.substring(2));
+                if (mode === 2 || mode === 4) setSysMode(mode);
+                return;
+            }
+
+            // A: = Sync mode (e.g. "A:1" or "A:0")
+            if (val.startsWith("A:")) {
+                const syncVal = val.substring(2).trim();
+                if (syncVal === "1") {
+                    isSync = true;
+                    document.getElementById('btn-sync').classList.add('active');
+                    document.getElementById('btn-indep').classList.remove('active');
+                } else {
+                    isSync = false;
+                    document.getElementById('btn-sync').classList.remove('active');
+                    document.getElementById('btn-indep').classList.add('active');
+                }
+                renderStageTable();
+                return;
+            }
+
+            // R: = Stage rules
             if (val.startsWith("R:")) {
                 const data = val.substring(2);
                 if (data === "END") {
                     renderStageTable(); // Sync complete
+                    showToast("✔ Settings loaded from ESP32");
                     return;
                 }
                 const p = data.split(',');
@@ -1460,6 +1531,7 @@
             }
         }
 
+
         // MODE TOGGLES
         document.getElementById('btn-sync').addEventListener('click', () => {
             isSync = true;
@@ -1473,6 +1545,7 @@
                     st[`f${f}`].val = st.f1.val;
                 }
             });
+            localStorage.setItem('fanSync', 'true');
             renderStageTable();
             sendCmd("A:1");
         });
@@ -1480,6 +1553,7 @@
             isSync = false;
             document.getElementById('btn-sync').classList.remove('active');
             document.getElementById('btn-indep').classList.add('active');
+            localStorage.setItem('fanSync', 'false');
             renderStageTable();
             sendCmd("A:0");
         });
