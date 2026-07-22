@@ -1100,14 +1100,6 @@
 
         let stages = [];
 
-        function initDefaultStages() {
-            stages = [
-                { f1: { spd: 30, sens: 0, val: 40 }, f2: { spd: 30, sens: 0, val: 40 }, f3: { spd: 30, sens: 0, val: 40 }, f4: { spd: 30, sens: 0, val: 40 } },
-                { f1: { spd: 50, sens: 0, val: 70 }, f2: { spd: 50, sens: 0, val: 70 }, f3: { spd: 50, sens: 0, val: 70 }, f4: { spd: 50, sens: 0, val: 70 } }
-            ];
-        }
-        initDefaultStages();
-
         // CLOCK
         setInterval(() => {
             const now = new Date();
@@ -1362,12 +1354,18 @@
                 charCmd = await service.getCharacteristic(charCmdUuid);
                 charAdc = await service.getCharacteristic(charAdcUuid);
 
+                await charCmd.startNotifications();
+                charCmd.addEventListener('characteristicvaluechanged', handleCmdNotify);
+
                 await charAdc.startNotifications();
                 charAdc.addEventListener('characteristicvaluechanged', handleTelemetry);
 
                 isConnected = true;
                 bleBtn.innerText = "Connected";
                 bleBtn.classList.add('connected');
+                
+                // Request saved rules from ESP32
+                sendCmd("S:");
             } catch (err) {
                 console.error(err);
                 bleBtn.innerText = "Failed";
@@ -1393,6 +1391,37 @@
                 const ac = document.getElementById('sens-ac');
                 if (p[4] === "1") { ac.innerText = "ON"; ac.className = "status-val val-ac"; }
                 else { ac.innerText = "OFF"; ac.className = "status-val val-ac off"; }
+            }
+        }
+
+        function handleCmdNotify(e) {
+            const val = new TextDecoder().decode(e.target.value);
+            console.log("BLE RCV:", val);
+            if (val.startsWith("R:")) {
+                const data = val.substring(2);
+                if (data === "END") {
+                    renderStageTable(); // Sync complete
+                    return;
+                }
+                const p = data.split(',');
+                if (p.length === 6) {
+                    const ruleIdx = parseInt(p[0]);
+                    const sens = parseInt(p[1]);
+                    const triggerVal = parseInt(p[3]);
+                    const fanIdx = parseInt(p[4]) + 1; // 0-based to 1-based (f1..f4)
+                    const pwm = parseInt(p[5]);
+                    const spd = Math.round((pwm / 255) * 100);
+
+                    while (stages.length <= ruleIdx) {
+                        stages.push({
+                            f1: { spd: 0, sens: 0, val: 0 },
+                            f2: { spd: 0, sens: 0, val: 0 },
+                            f3: { spd: 0, sens: 0, val: 0 },
+                            f4: { spd: 0, sens: 0, val: 0 }
+                        });
+                    }
+                    stages[ruleIdx][`f${fanIdx}`] = { spd: spd, sens: sens, val: triggerVal };
+                }
             }
         }
 
