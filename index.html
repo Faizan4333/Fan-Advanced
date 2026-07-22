@@ -1,48 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HEMEC Advanced Controller</title>
+    <title>NFCA - Nasser Fan Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
         :root {
-            --bg-body: #06090e;
-            --bg-panel: #0d1219;
-            --bg-element: #141b25;
-            --bg-element-hover: #1a2330;
-            --border-color: #1e293b;
-            --border-light: #334155;
-            
-            --text-main: #f1f5f9;
-            --text-dim: #94a3b8;
-            --text-muted: #475569;
-            
-            --accent-blue: #3b82f6;
-            --accent-blue-dim: rgba(59, 130, 246, 0.15);
-            --accent-green: #10b981;
-            --accent-green-dim: rgba(16, 185, 129, 0.15);
-            --accent-red: #ef4444;
-            --accent-red-dim: rgba(239, 68, 68, 0.15);
-            --accent-purple: #8b5cf6;
+            /* Clean off-white background */
+            --bg-base: #F5F7FA;
+            --bg-panel: #FFFFFF;
+
+            /* Glassmorphic Dark Purple (#312C51) for inputs and tables */
+            --bg-input: rgba(49, 44, 81, 0.05);
+            --bg-input-hover: rgba(49, 44, 81, 0.1);
+
+            --border-main: transparent;
+            /* Dark purple tinted borders */
+            --border-light: rgba(49, 44, 81, 0.1);
+
+            /* Text is now the deep Dark Purple (#312C51) for perfect contrast on white */
+            --text-main: #312C51;
+            --text-muted: rgba(49, 44, 81, 0.65);
+
+            /* Accents */
+            --accent-blue: #312C51;
+            /* Header and dark accents */
+            --accent-green: #10B981;
+            --accent-red: #ffd5d5;
+            --accent-purple: #10B981;
+            /* Sand yellow for highlights */
+            --accent-orange: #10B981;
         }
 
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
             font-family: 'Inter', sans-serif;
         }
 
         body {
-            background-color: var(--bg-body);
+            background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
-            padding: 1.5rem 2rem;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
             overflow-x: hidden;
         }
 
@@ -51,710 +56,1508 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
+            padding: 1.5rem 2rem;
+            background: var(--accent-blue);
+            border-bottom: none;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            box-shadow: 0 15px 40px rgba(78, 81, 191, 0.2);
+            margin-bottom: 2rem;
         }
 
         .logo {
-            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
             font-weight: 800;
             letter-spacing: 1px;
+            color: #10B981;
+            margin: 0;
+        }
+
+        .header-controls {
             display: flex;
             align-items: center;
-        }
-
-        .logo-hemec { color: var(--text-main); }
-        .logo-c { color: var(--accent-blue); margin-right: 0.5rem; }
-        .logo-text { color: var(--accent-blue); font-weight: 500; font-size: 1.1rem; }
-
-        .clock {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-main);
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-        
-        .ble-btn {
-            margin-left: 20px;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            border: 1px solid var(--accent-blue);
-            background: transparent;
-            color: var(--accent-blue);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .ble-btn:hover { background: var(--accent-blue-dim); }
-        .ble-btn.connected { border-color: var(--accent-red); color: var(--accent-red); }
-
-        /* LAYOUT */
-        .grid-top {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 1.5rem;
         }
 
-        .panel {
-            background-color: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+        .model-toggle {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 4px;
+            border: none;
+        }
+
+        .model-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .model-btn.active {
+            background: #10B981;
+            color: #312C51;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .ble-btn {
+            padding: 0.6rem 1.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: 0.2s;
+        }
+
+        .ble-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ble-btn.connected {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* MAIN LAYOUT */
+        main {
             padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: none;
+            border-radius: 32px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(49, 44, 81, 0.08);
             display: flex;
             flex-direction: column;
+            gap: 1.25rem;
         }
 
         .panel-header {
             font-size: 1.1rem;
-            font-weight: 700;
+            font-weight: 800;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--bg-input);
+            padding-bottom: 1rem;
+            margin-bottom: 0.5rem;
             color: var(--text-main);
+        }
+
+        .panel-title {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
         }
 
-        /* STATUS & SENSORS */
-        .status-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-            margin-bottom: 2rem;
-        }
-
+        /* LIVE STATUS PANEL */
         .status-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
 
         .status-label {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-size: 0.95rem;
+            gap: 0.5rem;
             color: var(--text-main);
+            font-size: 0.9rem;
         }
 
-        .status-value {
-            background-color: var(--bg-element);
-            border: 1px solid var(--border-color);
+        .status-val {
+            background: #312C51;
             padding: 0.4rem 0.8rem;
-            border-radius: 6px;
+            border-radius: 8px;
             font-family: monospace;
             font-size: 1.1rem;
-            min-width: 100px;
+            font-weight: 700;
+            color: #FFFFFF;
+            min-width: 80px;
+            text-align: center;
+            border: none;
+            box-shadow: 0 4px 10px rgba(49, 44, 81, 0.1);
+        }
+
+        .val-ac {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .val-ac.off {
+            color: var(--accent-red);
+            border-color: var(--border-main);
+            background: var(--bg-input);
+        }
+
+        .fan-mode-box {
+            border: 1px solid var(--accent-blue);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .fan-mode-title {
             text-align: center;
             color: var(--accent-blue);
-            font-weight: 600;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
         }
 
-        .val-on { 
-            color: var(--accent-green) !important; 
-            border-color: var(--accent-green) !important;
-            background-color: var(--accent-green-dim) !important;
-        }
-        .val-off {
-            color: var(--accent-red) !important;
-            border-color: var(--border-color) !important;
-        }
-
-        /* MODE TOGGLES */
-        .mode-buttons {
+        .mode-toggles {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 0.5rem;
         }
 
-        .mode-btn {
-            background-color: var(--bg-element);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem 0.5rem;
+        .auto-btn {
+            background: var(--bg-input);
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+            font-size: 0.8rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            font-weight: 600;
-            color: var(--text-dim);
         }
 
-        .mode-btn:hover { background-color: var(--bg-element-hover); }
-        .mode-btn.active {
-            background-color: var(--accent-blue-dim);
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-        }
-        .mode-btn.active::after {
-            content: '✓';
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            color: var(--accent-blue);
-            font-weight: bold;
+        .auto-btn:hover {
+            background: var(--bg-input-hover);
         }
 
-        /* MANUAL FAN SLIDERS */
-        .fan-sliders {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .fan-slider-row {
-            background: var(--bg-element);
-            border: 1px solid var(--border-color);
-            padding: 1rem;
-            border-radius: 8px;
+        .auto-btn.active {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: #10B981;
+            color: #312C51;
         }
 
-        .fan-slider-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-            font-size: 0.9rem;
+        /* OVERRIDE SLIDERS */
+        .override-card {
+            background: var(--bg-input);
+            padding: 1rem 1.25rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
         }
 
-        .fan-pwm-val { color: var(--accent-blue); font-family: monospace; font-size: 1.1rem;}
-
-        input[type=range] {
+        .premium-slider {
             -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-        input[type=range]:focus { outline: none; }
-        input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 8px;
-            background: var(--bg-body);
-            border: 1px solid var(--border-light);
+            background: rgba(49, 44, 81, 0.15);
             border-radius: 4px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 22px; width: 22px;
-            border-radius: 50%;
-            background: var(--accent-blue);
-            margin-top: -8px;
-            box-shadow: 0 0 10px var(--accent-blue);
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        input[type=range]:disabled::-webkit-slider-thumb {
-            background: var(--text-muted);
-            box-shadow: none;
-            cursor: not-allowed;
+            outline: none;
+            margin-top: 0.5rem;
         }
 
-        /* FORMS & INPUTS */
-        select, input[type=number] {
-            background: var(--bg-body);
+        .premium-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #10B981;
+            border: 3px solid #312C51;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+            transition: 0.2s;
+        }
+
+        .premium-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* RIGHT SIDE COLUMNS */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* STAGE OPERATIONS */
+        .stage-table-wrapper {
+            overflow-x: auto;
+            padding: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 12px;
+            text-align: center;
+        }
+
+        th {
+            padding: 0 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            border: none;
+        }
+
+        td {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+            background: var(--bg-input);
+            border: none;
+            transition: 0.2s;
+        }
+
+        tr:hover td {
+            background: var(--bg-input-hover);
+        }
+
+        td:first-child {
+            border-top-left-radius: 24px;
+            border-bottom-left-radius: 24px;
+        }
+
+        td:last-child {
+            border-top-right-radius: 24px;
+            border-bottom-right-radius: 24px;
+        }
+
+        .stage-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        input[type="number"],
+        select {
+            background: var(--bg-panel);
             border: 1px solid var(--border-light);
             color: var(--text-main);
-            padding: 0.75rem;
-            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
             outline: none;
             font-family: inherit;
             font-size: 0.9rem;
+            font-weight: 600;
+            transition: 0.2s;
+            cursor: pointer;
         }
-        select:focus, input[type=number]:focus { border-color: var(--accent-blue); }
+
+        input[type="number"]:focus,
+        select:focus {
+            border-color: #312C51;
+            background: var(--bg-panel);
+            box-shadow: 0 0 0 3px rgba(49, 44, 81, 0.15);
+        }
+
+        input[type="number"] {
+            width: 70px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .stage-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
 
         .btn {
-            background: var(--bg-element);
+            background: transparent;
+            border: none;
             color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: 600;
+            padding: 0.8rem 1.5rem;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
         }
-        .btn:hover { background: var(--bg-element-hover); }
-        .btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
-        .btn-primary:hover { background: #2563eb; }
-        .btn-danger { background: var(--accent-red-dim); border-color: var(--accent-red); color: var(--accent-red); }
-        .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
-        .btn-success { background: var(--accent-green-dim); border-color: var(--accent-green); color: var(--accent-green); }
 
-        /* TESTER */
-        .tester-group {
-            margin-bottom: 1.5rem;
+        .btn:hover {
+            background: var(--bg-input);
         }
-        .tester-label {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
+
+        .btn-primary {
+            background: #10B981;
+            color: #312C51;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
         }
-        
-        .feedback-box {
-            background: var(--bg-element);
-            border: 1px solid var(--accent-purple);
+
+        .btn-primary:hover {
+            background: #e6b176;
+            color: #312C51;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: #312C51;
+            box-shadow: 0 8px 20px rgba(241, 170, 155, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: #ffd5d5;
+            color: #312C51;
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            padding: 0.6rem;
             border-radius: 8px;
-            padding: 1.5rem;
-            text-align: center;
-            margin-top: 1.5rem;
-            animation: fadeIn 0.3s;
-        }
-
-        /* CUSTOM MODES */
-        .builder-row {
+            cursor: pointer;
+            background: rgba(241, 170, 155, 0.1);
+            /* Peach tint */
+            border: none;
+            color: var(--accent-red);
+            /* Peach text */
             display: flex;
-            gap: 1rem;
             align-items: center;
-            background: var(--bg-element);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            flex-wrap: wrap;
+            justify-content: center;
+            transition: 0.2s;
         }
-        
-        .rules-list {
-            margin-top: 1.5rem;
+
+        .btn-icon:hover {
+            background: var(--accent-red);
+            color: var(--bg-panel);
+            transform: scale(1.1);
+        }
+
+        /* SETUP & DIAGNOSTICS (50/50 SPLIT) */
+        .diag-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+        }
+
+        .diag-col {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
         }
-        
-        .rule-item {
+
+        .sub-head {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            background: var(--bg-body);
-            border: 1px solid var(--border-color);
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent-blue);
+            gap: 0.5rem;
         }
-        
-        .rule-text { font-size: 1.05rem; }
-        .rule-text span { color: var(--accent-blue); font-weight: 600; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .sub-head span {
+            color: var(--accent-blue);
+        }
+
+        /* AUTO RADAR */
+        .radar-box {
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-input);
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .radar-box:hover {
+            border-color: var(--accent-orange);
+            background: var(--bg-input-hover);
+        }
+
+        .radar-wrapper {
+            width: 180px;
+            height: 180px;
+            position: relative;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .radar-wrapper::before,
+        .radar-wrapper::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .radar-wrapper::before {
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            bottom: 30px;
+        }
+
+        .radar-wrapper::after {
+            top: 60px;
+            left: 60px;
+            right: 60px;
+            bottom: 60px;
+        }
+
+        .radar-beam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 70%, rgba(16, 185, 129, 0.7) 100%);
+            display: none;
+        }
+
+        .radar-arc {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-orange);
+            border-right-color: var(--accent-orange);
+            display: none;
+        }
+
+        .radar-fan {
+            color: var(--accent-orange);
+            z-index: 2;
+            width: 50px;
+            height: 50px;
+        }
+
+        .radar-box.active .radar-beam {
+            display: block;
+            animation: radarSpin 2s linear infinite;
+        }
+
+        .radar-box.active .radar-arc {
+            display: block;
+            animation: radarSpin 4s linear infinite;
+        }
+
+        .radar-box.active .radar-fan {
+            animation: radarSpin 1s linear infinite;
+        }
+
+        /* MANUAL RADAR (GREEN) */
+        .manual-radar-wrapper {
+            width: 55px;
+            height: 55px;
+            position: relative;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .manual-radar-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .manual-radar-beam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 70%, rgba(16, 185, 129, 0.6) 100%);
+            display: none;
+        }
+
+        .manual-radar-arc {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-green);
+            border-bottom-color: var(--accent-green);
+            display: none;
+        }
+
+        .manual-radar-icon {
+            color: var(--accent-green);
+            z-index: 2;
+            width: 22px;
+            height: 22px;
+        }
+
+        .box-dark.active-manual .manual-radar-beam {
+            display: block;
+            animation: radarSpin 1.5s linear infinite;
+        }
+
+        .box-dark.active-manual .manual-radar-arc {
+            display: block;
+            animation: radarSpin 3s linear infinite reverse;
+        }
+
+        .box-dark.active-manual .manual-radar-icon {
+            animation: radarSpin 1s linear infinite;
+        }
+
+        @keyframes radarSpin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .test-log {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            width: 100%;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .log-item.active {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .log-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border-light);
+        }
+
+        .log-item.active .log-dot {
+            background: var(--accent-blue);
+            box-shadow: 0 0 6px var(--accent-blue);
+        }
+
+        .box-dark {
+            background: var(--bg-input);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .freq-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 1rem;
+        }
+
+        .pill {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .pill.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+            color: white;
+        }
+
+        .polarity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            height: 100%;
+        }
+
+        .pol-btn {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            padding: 1rem 0.5rem;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .pol-btn:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .pol-btn.active {
+            background: #10B981;
+            border-color: #10B981;
+            color: #312C51;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+
+        /* Test Feedback Modal */
+        #test-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-panel);
+            border: 1px solid var(--accent-purple);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            text-align: center;
+            display: none;
+            min-width: 350px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 99;
+            display: none;
+        }
+
+        /* Themed Select Dropdowns */
+        select {
+            background-color: var(--bg-input) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border-light) !important;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.7rem top 50% !important;
+            background-size: 0.65rem auto !important;
+            padding-right: 2rem !important;
+            border-radius: 6px;
+        }
+
+        select option {
+            background-color: var(--bg-panel);
+            color: var(--text-main);
+        }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            .diag-split {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 1.5rem;
+                border-bottom-left-radius: 24px;
+                border-bottom-right-radius: 24px;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .model-toggle,
+            .ble-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <header>
         <div class="logo">
-            <span class="logo-hemec">HEME<span class="logo-c">C</span></span> 
-            <span class="logo-text">ADVANCED CONTROLLER</span>
+            <h1>NFCA</h1>
         </div>
-        <div class="clock">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            <span id="clockDisplay">12:30 PM</span>
-            <button id="bleConnectBtn" class="ble-btn">Connect</button>
+        <div class="header-controls">
+            <div class="model-toggle">
+                <button class="model-btn active" id="btn-mode-2" onclick="setSysMode(2)">2 FANS</button>
+                <button class="model-btn" id="btn-mode-4" onclick="setSysMode(4)">4 FANS</button>
+            </div>
+            <div style="font-weight:600; color:rgba(255, 255, 255, 0.6); font-size:0.9rem;" id="clockDisplay">12:30 PM
+            </div>
+            <button class="ble-btn" id="bleConnectBtn">Connect Bluetooth</button>
         </div>
     </header>
 
-    <div class="grid-top">
-        <!-- PANEL 1: DASHBOARD & FANS -->
+    <main>
+        <!-- LEFT COL: STATUS -->
         <div class="panel">
             <div class="panel-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-                LIVE STATUS & MANUAL OVERRIDE
-            </div>
-            
-            <!-- Sensors -->
-            <div class="status-list">
-                <div class="status-row">
-                    <div class="status-label">🌡️ Coolant Temp 1</div>
-                    <div class="status-value" id="sens-temp1">-- °C</div>
-                </div>
-                <div class="status-row">
-                    <div class="status-label">🌡️ Coolant Temp 2</div>
-                    <div class="status-value" id="sens-temp2">-- °C</div>
-                </div>
-                <div class="status-row">
-                    <div class="status-label">⚡ Speedometer</div>
-                    <div class="status-value" id="sens-speedo">-- V</div>
-                </div>
-                <div class="status-row">
-                    <div class="status-label">⚡ ECM Voltage</div>
-                    <div class="status-value" id="sens-ecm">-- V</div>
-                </div>
-                <div class="status-row">
-                    <div class="status-label">❄️ AC Status</div>
-                    <div class="status-value val-off" id="sens-ac">OFF</div>
+                <div class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                        stroke-width="2">
+                        <path d="M18 20V10M12 20V4M6 20v-6" />
+                    </svg>
+                    LIVE STATUS & MODE
                 </div>
             </div>
 
-            <!-- Mode Toggle -->
-            <div class="mode-buttons">
-                <div class="mode-btn active" id="btn-auto">
-                    <div style="font-size: 1.2rem; margin-bottom:0.25rem;">🤖</div>
-                    AUTO MODE
-                </div>
-                <div class="mode-btn" id="btn-manual">
-                    <div style="font-size: 1.2rem; margin-bottom:0.25rem;">🖐️</div>
-                    MANUAL OVERRIDE
-                </div>
+            <div id="fan-speeds-container"></div>
+
+            <div class="status-row">
+                <div class="status-label">❄️ AC Line</div>
+                <div class="status-val val-ac" id="sens-ac">ON</div>
+            </div>
+            <div class="status-row">
+                <div class="status-label">🌡️ Coolant Temp 1</div>
+                <div class="status-val" id="sens-temp1">-- °C</div>
+            </div>
+            <div class="status-row">
+                <div class="status-label">🌡️ Coolant Temp 2</div>
+                <div class="status-val" id="sens-temp2">-- °C</div>
+            </div>
+            <div class="status-row">
+                <div class="status-label">⚡ Speedometer</div>
+                <div class="status-val" id="sens-speedo">-- V</div>
+            </div>
+            <div class="status-row">
+                <div class="status-label">🚗 ECM Voltage</div>
+                <div class="status-val" id="sens-ecm">-- V</div>
             </div>
 
-            <!-- Fan Sliders -->
-            <div class="fan-sliders">
-                <div class="fan-slider-row">
-                    <div class="fan-slider-header">
-                        <span>Fan 1 Speed</span>
-                        <span class="fan-pwm-val" id="val-fan1">0%</span>
+            <div id="dashboard-sliders" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <!-- Filled dynamically by JS -->
+            </div>
+
+            <div class="fan-mode-box">
+                <div class="fan-mode-title">FAN MODE</div>
+                <div class="mode-toggles">
+                    <div class="auto-btn active" id="btn-sync">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                        </svg>
+                        2x FAN TOGETHER
                     </div>
-                    <input type="range" id="slider-fan1" min="0" max="255" value="0" disabled>
-                </div>
-                <div class="fan-slider-row">
-                    <div class="fan-slider-header">
-                        <span>Fan 2 Speed</span>
-                        <span class="fan-pwm-val" id="val-fan2">0%</span>
+                    <div class="auto-btn" id="btn-indep">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                        </svg>
+                        1x FAN EACH
                     </div>
-                    <input type="range" id="slider-fan2" min="0" max="255" value="0" disabled>
-                </div>
-                <div class="fan-slider-row">
-                    <div class="fan-slider-header">
-                        <span>Fan 3 Speed</span>
-                        <span class="fan-pwm-val" id="val-fan3">0%</span>
-                    </div>
-                    <input type="range" id="slider-fan3" min="0" max="255" value="0" disabled>
-                </div>
-                <div class="fan-slider-row">
-                    <div class="fan-slider-header">
-                        <span>Fan 4 Speed</span>
-                        <span class="fan-pwm-val" id="val-fan4">0%</span>
-                    </div>
-                    <input type="range" id="slider-fan4" min="0" max="255" value="0" disabled>
                 </div>
             </div>
         </div>
 
-        <!-- PANEL 2: FAN TESTER -->
-        <div class="panel">
-            <div class="panel-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                DIAGNOSTIC FAN TESTER
-            </div>
-            
-            <p style="color: var(--accent-red); font-weight:600; font-size:0.85rem; margin-bottom:1.5rem;">
-                Warning: Entering test mode disables Auto logic.
-            </p>
+        <!-- RIGHT COL -->
+        <div class="right-col">
 
-            <div class="tester-group">
-                <div class="tester-label">Select Fan Output to Test</div>
-                <select id="test-fan-pin" style="width: 100%;">
-                    <option value="0">Fan Output 1</option>
-                    <option value="1">Fan Output 2</option>
-                    <option value="2">Fan Output 3</option>
-                    <option value="3">Fan Output 4</option>
-                </select>
-            </div>
+            <!-- STAGE OPERATIONS -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">STAGE-BASED OPERATIONS</div>
+                    <button class="btn" style="padding:0.4rem 0.8rem;" onclick="addStage()">➕ ADD STAGE</button>
+                </div>
 
-            <div class="tester-group">
-                <div class="tester-label">Select Fan Model Profile</div>
-                <select id="test-profile" style="width: 100%;">
-                    <option value="100,50">SPAL Plus / Early Pierburg (100Hz, Pos)</option>
-                    <option value="100,150">SPAL Base / Corvette C7 (100Hz, Neg)</option>
-                    <option value="10,50">Mercedes / Jeep (10Hz, Pos)</option>
-                    <option value="128,50">Proform Universal (128Hz, Pos)</option>
-                    <option value="50,50">Bosch 013... (50Hz, Pos)</option>
-                </select>
+                <div class="stage-table-wrapper">
+                    <table id="stage-table">
+                        <!-- Rendered by JS -->
+                    </table>
+                </div>
+
+                <div class="stage-actions">
+                    <button class="btn btn-primary" onclick="saveStages()"> SAVE </button>
+                </div>
             </div>
 
-            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                <button class="btn btn-primary" style="flex:1;" onclick="startTest()">Feed Profile</button>
-                <button class="btn" style="flex:1; border-color:var(--accent-purple); color:var(--accent-purple);" onclick="startAutoTest()">Auto Sequence Test</button>
-            </div>
-            <button class="btn btn-danger" style="width:100%; margin-top:1rem;" onclick="stopTest()">STOP TEST</button>
+            <!-- SETUP & DIAGNOSTICS -->
+            <div class="panel">
+                <div class="panel-header">SETUP & DIAGNOSTICS</div>
 
-            <!-- Feedback Box -->
-            <div id="test-feedback" class="feedback-box" style="display: none;">
-                <div style="color:var(--accent-purple); font-weight:700; margin-bottom:0.5rem;" id="test-status-text">Testing Profile...</div>
-                <div style="font-size:1.1rem; margin-bottom:1.5rem;">Is the fan running?</div>
-                <div style="display: flex; gap: 1rem; justify-content: center;">
-                    <button class="btn btn-success" onclick="feedbackYes()">Yes, it works!</button>
-                    <button class="btn btn-danger" onclick="feedbackNo()">No, try next</button>
+                <div class="diag-split">
+                    <!-- Col 1: Left (Manual) -->
+                    <div class="diag-col">
+                        <div class="sub-head">MANUAL CONFIGURATION</div>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Set your own
+                            parameters manually.</p>
+
+                        <div class="box-dark" style="margin-bottom:1.5rem;">
+                            <div
+                                style="font-size:0.8rem; font-weight:700; color:var(--accent-purple); margin-bottom:0.25rem;">
+                                PWM FREQUENCY (Hz)</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.75rem;">Enter PWM
+                                Frequency</div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <input type="number" id="manual-freq" value="20000" style="flex:1; padding:0.5rem;">
+                                <span style="font-weight:600;">Hz</span>
+                            </div>
+                            <div class="freq-pills">
+                                <div class="pill" onclick="setManualFreq(this, 200)">200 Hz</div>
+                                <div class="pill" onclick="setManualFreq(this, 1000)">1 kHz</div>
+                                <div class="pill" onclick="setManualFreq(this, 5000)">5 kHz</div>
+                                <div class="pill" onclick="setManualFreq(this, 10000)">10 kHz</div>
+                                <div class="pill active" onclick="setManualFreq(this, 20000)">20 kHz</div>
+                                <div class="pill" onclick="setManualFreq(this, 30000)">30 kHz</div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                            <!-- Polarity -->
+                            <div class="box-dark" style="display:flex; flex-direction:column; padding:1rem;">
+                                <div
+                                    style="font-size:0.8rem; font-weight:700; margin-bottom:1rem; text-transform:uppercase;">
+                                    Polarity</div>
+                                <div class="polarity-grid">
+                                    <div class="pol-btn active" onclick="setPolarity(0)">+<br><span
+                                            style="font-size:0.75rem;font-weight:400;margin-top:0.2rem;display:block;">POSITIVE<br>(Normal)</span>
+                                    </div>
+                                    <div class="pol-btn" onclick="setPolarity(1)">-<br><span
+                                            style="font-size:0.75rem;font-weight:400;margin-top:0.2rem;display:block;">NEGATIVE<br>(Reverse)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Signal Status with Manual Radar -->
+                            <div class="box-dark" id="pwm-status-box"
+                                style="display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid var(--border-main); transition:0.2s;">
+                                <div class="manual-radar-wrapper">
+                                    <div class="manual-radar-beam"></div>
+                                    <div class="manual-radar-arc"></div>
+                                    <svg class="manual-radar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div style="flex:1; text-align:left;">
+                                    <div style="color:var(--text-muted); font-weight:700; font-size:0.75rem; margin-bottom:0.25rem;"
+                                        id="pwm-status-title">PWM SIGNAL STATUS</div>
+                                    <div style="font-size:0.95rem; color:var(--text-muted); margin-bottom:0.15rem; font-weight:600;"
+                                        id="pwm-status-msg">Standby</div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);" id="pwm-status-sub">Ready
+                                        for test</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:auto;">
+                            <div style="display:flex; gap:0.5rem;">
+                                <select id="manual-fan-target" style="flex:1; padding:0.75rem;"></select>
+                            </div>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button class="btn btn-primary"
+                                    style="flex:1; padding:1rem; font-size:1rem; font-weight:700;"
+                                    onclick="startManualTest()">START</button>
+                                <button class="btn btn-danger"
+                                    style="flex:1; padding:1rem; font-size:1rem; font-weight:700;"
+                                    onclick="stopTest()">STOP </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Col 2: Right (Auto) -->
+                    <div class="diag-col">
+                        <div class="sub-head">AUTO RUN</div>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Automatically test all
+                            fan types.</p>
+
+                        <div class="radar-box" id="radar-container" onclick="startAutoTest()"
+                            title="Click to Start Auto Detect"
+                            style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                            <div style="text-align:center; margin-bottom:2rem;">
+                                <div id="radar-title"
+                                    style="color:var(--accent-blue); font-weight:700; font-size:1.2rem; margin-bottom:0.5rem;">
+                                    Click to Start Auto Detect</div>
+                                <div id="radar-subtitle" style="font-size:0.95rem; color:var(--text-muted);">Testing
+                                    each fan type one by one.</div>
+                            </div>
+
+                            <div class="radar-wrapper" id="radar-anim" style="margin-bottom:2rem;">
+                                <div class="radar-beam"></div>
+                                <div class="radar-arc"></div>
+                                <svg class="radar-fan" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 16v-4"></path>
+                                    <path d="M12 8h.01"></path>
+                                </svg>
+                            </div>
+
+                            <div class="test-log" style="text-align:center; font-size:1rem;">
+                                <div class="log-item active" id="log-text" style="justify-content:center;">
+                                    <div class="log-dot"></div> Waiting to start...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- PANEL 3: CUSTOM MODES -->
-    <div class="panel" style="margin-top:1.5rem;">
-        <div class="panel-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            CUSTOM MODES ENGINE
-        </div>
-        <p style="color: var(--text-dim); font-size:0.85rem; margin-bottom:1.5rem;">Rules are saved securely on the ESP32 and run headlessly. Max 10 rules.</p>
-        
-        <div class="builder-row">
-            <span style="font-weight:600;">IF</span>
-            <select id="rule-sensor">
-                <option value="0">Coolant 1 Temp (°C)</option>
-                <option value="1">Coolant 2 Temp (°C)</option>
-                <option value="2">Speedometer (V)</option>
-                <option value="3">ECM (V)</option>
-                <option value="4">AC Status (1=ON)</option>
-            </select>
-            <select id="rule-op">
-                <option value="0">&gt; (Greater)</option>
-                <option value="1">&lt; (Less)</option>
-                <option value="2">== (Equals)</option>
-            </select>
-            <input type="number" id="rule-val" placeholder="Value (e.g. 90)" style="width:120px;">
-            
-            <span style="font-weight:600; margin-left:1rem;">THEN</span>
-            <select id="rule-fan">
-                <option value="0">Fan 1</option>
-                <option value="1">Fan 2</option>
-                <option value="2">Fan 3</option>
-                <option value="3">Fan 4</option>
-            </select>
-            <span>=</span>
-            <input type="number" id="rule-speed" placeholder="PWM (0-255)" min="0" max="255" style="width:140px;">
-            
-            <button class="btn btn-primary" style="margin-left:auto;" onclick="addRule()">+ Add Rule</button>
+    <!-- Modal overlay for tester feedback -->
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div id="test-feedback">
+        <h3 style="color:var(--accent-blue); margin-bottom:0.5rem; font-size:1.5rem;" id="modal-title">Testing
+            Profile...</h3>
+        <p style="font-size:1.1rem; margin-bottom:2rem; color:var(--text-muted);" id="modal-desc">Is the fan running
+            smoothly?</p>
+
+        <div id="modal-btns-yesno" style="display:flex; gap:1rem; justify-content:center;">
+            <button class="btn"
+                style="background:var(--accent-green); border-color:var(--accent-green); color:white; padding:0.75rem 2rem;"
+                onclick="feedbackYes()">Yes, it works!</button>
+            <button class="btn btn-danger" style="padding:0.75rem 2rem;" onclick="feedbackNo()">No, try next</button>
         </div>
 
-        <div class="rules-list" id="rules-container">
-            <!-- Rules injected here -->
+        <div id="modal-btns-ok" style="display:none; justify-content:center;">
+            <button class="btn btn-primary" style="padding:0.75rem 3rem;" onclick="stopTest()">OK</button>
         </div>
     </div>
 
     <script>
-        // Clock updater
+        // GLOBAL STATE
+        let sysMode = 2;
+        let isSync = true;
+        let polarity = 0; // 0 = Pos, 1 = Neg
+
+        let stages = [];
+
+        function initDefaultStages() {
+            stages = [
+                { f1: { spd: 30, sens: 0, val: 40 }, f2: { spd: 30, sens: 0, val: 40 }, f3: { spd: 30, sens: 0, val: 40 }, f4: { spd: 30, sens: 0, val: 40 } },
+                { f1: { spd: 50, sens: 0, val: 70 }, f2: { spd: 50, sens: 0, val: 70 }, f3: { spd: 50, sens: 0, val: 70 }, f4: { spd: 50, sens: 0, val: 70 } }
+            ];
+        }
+        initDefaultStages();
+
+        // CLOCK
         setInterval(() => {
             const now = new Date();
-            let hours = now.getHours();
-            let ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12; 
+            let hours = now.getHours(); let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12; hours = hours ? hours : 12;
             let minutes = now.getMinutes().toString().padStart(2, '0');
             document.getElementById('clockDisplay').innerText = `${hours}:${minutes} ${ampm}`;
         }, 1000);
 
-        // BLE Setup
+        function logMsg(msg) { console.log(msg); }
+
+        // --- DASHBOARD OVERRIDE SLIDERS ---
+        function renderDashboardSliders() {
+            const container = document.getElementById('dashboard-sliders');
+            let html = '<div class="sub-head" style="margin-bottom:1rem; font-size:0.9rem;">MANUAL OVERRIDES</div>';
+            html += '<div style="display:flex; flex-direction:column; gap:0.75rem;">';
+            for (let i = 1; i <= sysMode; i++) {
+                html += `
+                    <div class="override-card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                            <div style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">FAN ${i} SPEED</div>
+                            <div style="color:var(--accent-blue); font-weight:800; font-size:0.9rem;" id="val-override-${i}">0%</div>
+                        </div>
+                        <input type="range" class="premium-slider" id="slider-override-${i}" min="0" max="100" value="0" oninput="updateOverride(${i}, this.value)" style="background: linear-gradient(to right, #312C51 0%, rgba(49, 44, 81, 0.15) 0%);">
+                    </div>
+                `;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function updateOverride(fanIdx, val) {
+            document.getElementById(`val-override-${fanIdx}`).innerText = val + '%';
+            
+            // Fill slider background up to the current value
+            const slider = document.getElementById(`slider-override-${fanIdx}`);
+            slider.style.background = `linear-gradient(to right, #312C51 ${val}%, rgba(49, 44, 81, 0.15) ${val}%)`;
+
+            // Scale 0-100% to 0-255 for the ESP32
+            let pwmVal = Math.round((val / 100) * 255);
+            sendCmd(`M:${fanIdx}:${pwmVal}`);
+            logMsg(`Overriding Fan ${fanIdx} to ${val}% (${pwmVal} PWM)`);
+        }
+
+        // UI RENDERERS
+        function setSysMode(mode) {
+            sysMode = mode;
+            document.getElementById('btn-mode-2').classList.toggle('active', mode === 2);
+            document.getElementById('btn-mode-4').classList.toggle('active', mode === 4);
+
+            const fansContainer = document.getElementById('fan-speeds-container');
+            let fansHtml = '';
+            for (let i = 1; i <= mode; i++) {
+                fansHtml += `
+                    <div class="status-row">
+                        <div class="status-label">⚙️ Fan ${i} Speed</div>
+                        <div class="status-val" id="disp-f${i}">-- %</div>
+                    </div>
+                `;
+            }
+            fansContainer.innerHTML = fansHtml;
+
+            const manualTarget = document.getElementById('manual-fan-target');
+            let targetHtml = '';
+            for (let i = 1; i <= mode; i++) {
+                targetHtml += `<option value="${i - 1}">Fan ${i} Output</option>`;
+            }
+            manualTarget.innerHTML = targetHtml;
+
+            renderStageTable();
+            renderDashboardSliders();
+            sendCmd("S:" + mode);
+        }
+
+        function addStage() {
+            stages.push({
+                f1: { spd: 0, sens: 0, val: 0 }, f2: { spd: 0, sens: 0, val: 0 }, f3: { spd: 0, sens: 0, val: 0 }, f4: { spd: 0, sens: 0, val: 0 }
+            });
+            renderStageTable();
+        }
+
+        function removeStage(idx) {
+            stages.splice(idx, 1);
+            renderStageTable();
+        }
+
+        function updateStage(sIdx, fIdx, key, val) {
+            stages[sIdx][`f${fIdx}`][key] = parseFloat(val);
+            if (key === 'sens') {
+                // If switching to AC, set val to 1 (ON) by default, else 0
+                stages[sIdx][`f${fIdx}`].val = (val == 4) ? 1 : 0;
+                renderStageTable(); // re-render to swap input types
+            }
+        }
+
+        function updateSyncStage(sIdx, key, val) {
+            let numVal = parseFloat(val);
+            if (key === 'sens') {
+                let triggerVal = (numVal == 4) ? 1 : 0;
+                for (let f = 1; f <= sysMode; f++) {
+                    stages[sIdx][`f${f}`].sens = numVal;
+                    stages[sIdx][`f${f}`].val = triggerVal;
+                }
+                renderStageTable();
+            } else {
+                for (let f = 1; f <= sysMode; f++) {
+                    stages[sIdx][`f${f}`][key] = numVal;
+                }
+            }
+        }
+
+        function renderStageTable() {
+            const table = document.getElementById('stage-table');
+            let html = '<thead><tr><th></th><th>Stage</th>';
+
+            if (isSync) {
+                html += `<th>Global Fan Speed</th><th>Condition Trigger</th>`;
+            } else {
+                for (let f = 1; f <= sysMode; f++) {
+                    html += `<th>Fan ${f} Speed</th><th>Fan ${f} Condition</th>`;
+                }
+            }
+            html += '</tr></thead><tbody>';
+
+            stages.forEach((st, i) => {
+                html += `<tr>`;
+                html += `<td><button class="btn-icon" onclick="removeStage(${i})" title="Remove Stage"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>`;
+                html += `<td><div class="stage-label">${i + 1}</div></td>`;
+
+                if (isSync) {
+                    let fanData = st.f1; // Display f1 data, but changes apply to all
+                    html += `
+                        <td>
+                            <div class="input-group">
+                                <input type="number" value="${fanData.spd}" min="0" max="100" onchange="updateSyncStage(${i}, 'spd', this.value)"> %
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <select onchange="updateSyncStage(${i}, 'sens', this.value)">
+                                    <option value="0" ${fanData.sens == 0 ? 'selected' : ''}>Coolant 1</option>
+                                    <option value="1" ${fanData.sens == 1 ? 'selected' : ''}>Coolant 2</option>
+                                    <option value="2" ${fanData.sens == 2 ? 'selected' : ''}>Speedo</option>
+                                    <option value="3" ${fanData.sens == 3 ? 'selected' : ''}>ECM</option>
+                                    <option value="4" ${fanData.sens == 4 ? 'selected' : ''}>AC</option>
+                                </select>
+                    `;
+
+                    if (fanData.sens == 4) { // AC (On/Off)
+                        html += `
+                                <select onchange="updateSyncStage(${i}, 'val', this.value)">
+                                    <option value="1" ${fanData.val == 1 ? 'selected' : ''}>ON</option>
+                                    <option value="0" ${fanData.val == 0 ? 'selected' : ''}>OFF</option>
+                                </select>
+                            </div></td>
+                        `;
+                    } else { // Normal number input
+                        html += `
+                                <input type="number" value="${fanData.val}" onchange="updateSyncStage(${i}, 'val', this.value)">
+                            </div></td>
+                        `;
+                    }
+                } else {
+                    for (let f = 1; f <= sysMode; f++) {
+                        let fanData = st[`f${f}`];
+                        html += `
+                            <td>
+                                <div class="input-group">
+                                    <input type="number" value="${fanData.spd}" min="0" max="100" onchange="updateStage(${i}, ${f}, 'spd', this.value)"> %
+                                </div>
+                            </td>
+                            <td>
+                                <div class="input-group">
+                                    <select onchange="updateStage(${i}, ${f}, 'sens', this.value)">
+                                        <option value="0" ${fanData.sens == 0 ? 'selected' : ''}>Coolant 1</option>
+                                        <option value="1" ${fanData.sens == 1 ? 'selected' : ''}>Coolant 2</option>
+                                        <option value="2" ${fanData.sens == 2 ? 'selected' : ''}>Speedo</option>
+                                        <option value="3" ${fanData.sens == 3 ? 'selected' : ''}>ECM</option>
+                                        <option value="4" ${fanData.sens == 4 ? 'selected' : ''}>AC</option>
+                                    </select>
+                        `;
+
+                        if (fanData.sens == 4) { // AC (On/Off)
+                            html += `
+                                    <select onchange="updateStage(${i}, ${f}, 'val', this.value)">
+                                        <option value="1" ${fanData.val == 1 ? 'selected' : ''}>ON</option>
+                                        <option value="0" ${fanData.val == 0 ? 'selected' : ''}>OFF</option>
+                                    </select>
+                                </div></td>
+                            `;
+                        } else { // Normal number input
+                            html += `
+                                    <input type="number" value="${fanData.val}" onchange="updateStage(${i}, ${f}, 'val', this.value)">
+                                </div></td>
+                            `;
+                        }
+                    }
+                }
+                html += `</tr>`;
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function setManualFreq(el, freq) {
+            document.getElementById('manual-freq').value = freq;
+            document.querySelectorAll('.freq-pills .pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function setPolarity(val) {
+            polarity = val;
+            const btns = document.querySelectorAll('.pol-btn');
+            btns[0].classList.toggle('active', val === 0);
+            btns[1].classList.toggle('active', val === 1);
+        }
+
+        // Initialize UI
+        setSysMode(2);
+        renderDashboardSliders();
+
+        // BLE LOGIC
         const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
         const charCmdUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
         const charAdcUuid = "9b1c7130-9b49-411a-ab57-37c26fb43015";
 
-        let device, server, charCmd, charAdc;
+        let device, charCmd, charAdc;
         let isConnected = false;
-        
-        let fans = [0, 0, 0, 0];
-        let isAuto = false;
+        const bleBtn = document.getElementById('bleConnectBtn');
 
-        const connectBtn = document.getElementById('bleConnectBtn');
-
-        connectBtn.addEventListener('click', async () => {
+        bleBtn.addEventListener('click', async () => {
             if (isConnected) {
-                if(device) device.gatt.disconnect();
+                if (device) device.gatt.disconnect();
                 return;
             }
             try {
-                connectBtn.innerText = "Scanning...";
+                bleBtn.innerText = "Scanning...";
                 device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'ESP32_Dual_Fan' }],
                     optionalServices: [serviceUuid]
                 });
-                device.addEventListener('gattserverdisconnected', onDisconnect);
+                device.addEventListener('gattserverdisconnected', () => {
+                    isConnected = false;
+                    bleBtn.innerText = "Connect Bluetooth";
+                    bleBtn.classList.remove('connected');
+                });
 
-                connectBtn.innerText = "Connecting...";
-                server = await device.gatt.connect();
-
+                bleBtn.innerText = "Connecting...";
+                const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(serviceUuid);
+
                 charCmd = await service.getCharacteristic(charCmdUuid);
                 charAdc = await service.getCharacteristic(charAdcUuid);
 
                 await charAdc.startNotifications();
-                charAdc.addEventListener('characteristicvaluechanged', handleSensorData);
+                charAdc.addEventListener('characteristicvaluechanged', handleTelemetry);
 
                 isConnected = true;
-                connectBtn.classList.add('connected');
-                connectBtn.innerText = "Disconnect";
-                
-                document.querySelectorAll('input[type=range]').forEach(s => s.disabled = isAuto);
+                bleBtn.innerText = "Connected";
+                bleBtn.classList.add('connected');
             } catch (err) {
                 console.error(err);
-                connectBtn.innerText = "Connect";
+                bleBtn.innerText = "Failed";
+                setTimeout(() => bleBtn.innerText = "Connect Bluetooth", 2000);
             }
         });
 
-        function onDisconnect() {
-            isConnected = false;
-            connectBtn.classList.remove('connected');
-            connectBtn.innerText = "Connect";
-            document.querySelectorAll('input[type=range]').forEach(s => s.disabled = true);
-        }
-
         async function sendCmd(cmdStr) {
-            if(!charCmd) return;
-            const data = new TextEncoder().encode(cmdStr);
-            try { await charCmd.writeValue(data); } catch(e) { console.error("CMD error:", e); }
+            if (!charCmd) return;
+            try { await charCmd.writeValue(new TextEncoder().encode(cmdStr)); console.log("BLE SENT:", cmdStr); }
+            catch (e) { console.error(e); }
         }
 
-        // Dashboard Logic
-        function handleSensorData(event) {
-            const value = new TextDecoder().decode(event.target.value);
-            const parts = value.split(',');
-            if (parts.length >= 6) {
-                document.getElementById('sens-temp1').innerText = parts[0] + " °C";
-                document.getElementById('sens-temp2').innerText = parts[1] + " °C";
-                document.getElementById('sens-speedo').innerText = parseFloat(parts[2]).toFixed(1) + " V";
-                document.getElementById('sens-ecm').innerText = parseFloat(parts[3]).toFixed(1) + " V";
-                
-                const acOn = parts[4] === "1";
-                const acInd = document.getElementById('sens-ac');
-                if(acOn) {
-                    acInd.className = "status-value val-on";
-                    acInd.innerText = "ON";
-                } else {
-                    acInd.className = "status-value val-off";
-                    acInd.innerText = "OFF";
-                }
+        function handleTelemetry(e) {
+            const val = new TextDecoder().decode(e.target.value);
+            const p = val.split(',');
+            if (p.length >= 6) {
+                document.getElementById('sens-temp1').innerText = p[0] + " °C";
+                document.getElementById('sens-temp2').innerText = p[1] + " °C";
+                document.getElementById('sens-speedo').innerText = parseFloat(p[2]).toFixed(1) + " V";
+                document.getElementById('sens-ecm').innerText = parseFloat(p[3]).toFixed(1) + " V";
 
-                const espAuto = parts[5] === "1";
-                if (espAuto !== isAuto) {
-                    isAuto = espAuto;
-                    if(isAuto) {
-                        document.getElementById('btn-auto').classList.add('active');
-                        document.getElementById('btn-manual').classList.remove('active');
-                    } else {
-                        document.getElementById('btn-auto').classList.remove('active');
-                        document.getElementById('btn-manual').classList.add('active');
-                    }
-                    document.querySelectorAll('input[type=range]').forEach(s => s.disabled = isAuto);
-                }
+                const ac = document.getElementById('sens-ac');
+                if (p[4] === "1") { ac.innerText = "ON"; ac.className = "status-val val-ac"; }
+                else { ac.innerText = "OFF"; ac.className = "status-val val-ac off"; }
             }
         }
 
-        // Mode Toggles
-        document.getElementById('btn-auto').addEventListener('click', () => { sendCmd("A:1"); });
-        document.getElementById('btn-manual').addEventListener('click', () => { sendCmd("A:0"); });
-
-        // Sliders
-        for(let i=1; i<=4; i++) {
-            const slider = document.getElementById('slider-fan'+i);
-            slider.addEventListener('input', (e) => {
-                fans[i-1] = e.target.value;
-                document.getElementById('val-fan'+i).innerText = Math.round((e.target.value/255)*100) + "%";
-                updateFans();
+        // MODE TOGGLES
+        document.getElementById('btn-sync').addEventListener('click', () => {
+            isSync = true;
+            document.getElementById('btn-sync').classList.add('active');
+            document.getElementById('btn-indep').classList.remove('active');
+            // When syncing, copy Fan 1's settings to all other fans immediately
+            stages.forEach(st => {
+                for (let f = 2; f <= sysMode; f++) {
+                    st[`f${f}`].spd = st.f1.spd;
+                    st[`f${f}`].sens = st.f1.sens;
+                    st[`f${f}`].val = st.f1.val;
+                }
             });
+            renderStageTable();
+            sendCmd("A:1");
+        });
+        document.getElementById('btn-indep').addEventListener('click', () => {
+            isSync = false;
+            document.getElementById('btn-sync').classList.remove('active');
+            document.getElementById('btn-indep').classList.add('active');
+            renderStageTable();
+            sendCmd("A:0");
+        });
+
+        // SAVE STAGES -> GENERATE M: COMMANDS
+        async function saveStages() {
+            let ruleIdx = 0;
+            for (let i = 0; i < stages.length; i++) {
+                for (let f = 1; f <= sysMode; f++) {
+                    const fanData = stages[i][`f${f}`];
+                    if (fanData.spd > 0) {
+                        let pwm = Math.floor((fanData.spd / 100) * 255);
+                        await sendCmd(`M:${ruleIdx},${fanData.sens},0,${fanData.val},${f - 1},${pwm}`);
+                        ruleIdx++;
+                        if (ruleIdx >= 10) break;
+                    }
+                }
+                if (ruleIdx >= 10) break;
+            }
+
+            for (let i = ruleIdx; i < 10; i++) await sendCmd(`C:${i}`);
+            if (ruleIdx >= 10) alert("Note: Maximum 10 rules saved to ESP32.");
         }
 
-        let debounceTmr;
-        function updateFans() {
-            clearTimeout(debounceTmr);
-            debounceTmr = setTimeout(() => {
-                sendCmd(`F:${fans[0]},${fans[1]},${fans[2]},${fans[3]}`);
-            }, 50);
-        }
-
-        // Custom Modes Logic
-        let ruleCount = 0;
-        function addRule() {
-            const sIdx = document.getElementById('rule-sensor').value;
-            const op = document.getElementById('rule-op').value;
-            const val = document.getElementById('rule-val').value;
-            const fIdx = document.getElementById('rule-fan').value;
-            const spd = document.getElementById('rule-speed').value;
-
-            if(!val || !spd) { alert("Please enter threshold and speed."); return; }
-
-            const cmd = `M:${ruleCount},${sIdx},${op},${val},${fIdx},${spd}`;
-            sendCmd(cmd);
-
-            const sensorNames = ["Coolant 1", "Coolant 2", "Speedo", "ECM", "AC"];
-            const opNames = [">", "<", "=="];
-            const div = document.createElement('div');
-            div.className = "rule-item";
-            div.id = `rule-ui-${ruleCount}`;
-            div.innerHTML = `
-                <div class="rule-text">
-                    IF <span>${sensorNames[sIdx]}</span> ${opNames[op]} <span>${val}</span> 
-                    THEN <span>Fan ${parseInt(fIdx)+1}</span> = <span>${spd} PWM</span>
-                </div>
-                <button class="btn btn-danger" onclick="deleteRule(${ruleCount})">Delete</button>
-            `;
-            document.getElementById('rules-container').appendChild(div);
-            ruleCount++;
-            if(ruleCount >= 10) ruleCount = 0;
-        }
-
-        function deleteRule(idx) {
-            sendCmd(`C:${idx}`);
-            document.getElementById(`rule-ui-${idx}`).remove();
-        }
-
-        // Tester Logic
+        // TESTER LOGIC
         const allProfiles = [
-            { name: "SPAL Plus / Early Pierburg (100Hz, Pos)", val: "100,50" },
-            { name: "SPAL Base / Corvette C7 (100Hz, Neg)", val: "100,150" },
-            { name: "Mercedes / Jeep (10Hz, Pos)", val: "10,50" },
-            { name: "Proform Universal (128Hz, Pos)", val: "128,50" },
-            { name: "Bosch 013... (50Hz, Pos)", val: "50,50" }
+            { name: "SPAL Brushless (100Hz)", val: "100,50" },
+            { name: "Mercedes PWM (10Hz)", val: "10,50" },
+            { name: "Bosch (50Hz)", val: "50,50" },
+            { name: "Audi (100Hz)", val: "100,150" },
+            { name: "SPAL High Power (100Hz)", val: "100,50" }
         ];
+
         let autoTestIndex = -1;
 
-        function startTest() {
-            autoTestIndex = -1; 
-            const fIdx = document.getElementById('test-fan-pin').value;
-            const profileSel = document.getElementById('test-profile');
-            const profile = profileSel.value.split(','); 
-            
-            document.getElementById('test-status-text').innerText = "Testing: " + profileSel.options[profileSel.selectedIndex].text;
-            sendCmd(`T:${fIdx},${profile[0]},${profile[1]}`);
+        function showModal(title, desc, isYesNo) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-btns-yesno').style.display = isYesNo ? 'flex' : 'none';
+            document.getElementById('modal-btns-ok').style.display = isYesNo ? 'none' : 'flex';
+            document.getElementById('modal-overlay').style.display = 'block';
             document.getElementById('test-feedback').style.display = 'block';
+        }
+
+        let manualRampInterval;
+        let currentManualSpd = 0;
+
+        function startManualTest() {
+            autoTestIndex = -1;
+            const fIdx = document.getElementById('manual-fan-target').value;
+            const freq = document.getElementById('manual-freq').value;
+            
+            clearInterval(manualRampInterval);
+            currentManualSpd = 0;
+
+            // Update PWM Box to active state
+            const box = document.getElementById('pwm-status-box');
+            box.classList.add('active-manual');
+            box.style.borderColor = 'var(--accent-green)';
+            document.getElementById('pwm-status-title').style.color = 'var(--accent-green)';
+            document.getElementById('pwm-status-msg').innerText = "Ramping up speed...";
+            document.getElementById('pwm-status-msg').style.color = 'var(--accent-green)';
+            
+            // Ramp from 0 to 255 over ~6.5 seconds
+            manualRampInterval = setInterval(() => {
+                currentManualSpd += 2; // Increment by 2 every 50ms
+                if (currentManualSpd >= 255) {
+                    currentManualSpd = 255;
+                    clearInterval(manualRampInterval);
+                    document.getElementById('pwm-status-msg').innerText = "Max Speed Reached";
+                }
+                
+                let duty = currentManualSpd;
+                if (polarity === 1) duty = 255 - duty; // Reverse logic if needed
+
+                sendCmd(`T:${fIdx},${freq},${duty}`);
+                
+                let pct = Math.floor((currentManualSpd / 255) * 100);
+                document.getElementById('pwm-status-sub').innerText = `Fan ${parseInt(fIdx) + 1} | ${freq}Hz | Power: ${pct}%`;
+                document.getElementById('log-text').innerHTML = `<div class="log-dot"></div> Manual Ramping: Fan ${parseInt(fIdx) + 1} (${pct}%)`;
+            }, 50);
         }
 
         function startAutoTest() {
             autoTestIndex = 0;
+            document.getElementById('radar-container').classList.add('active');
+            document.getElementById('radar-title').innerText = "Auto Detect In Progress...";
+            document.getElementById('radar-subtitle').innerText = "Testing each fan type one by one.";
             runAutoTestStep();
         }
 
         function runAutoTestStep() {
-            if(autoTestIndex >= allProfiles.length) {
-                alert("Auto sequence finished. No profiles worked.");
-                stopTest();
+            if (autoTestIndex >= allProfiles.length) {
+                showModal("Sequence Finished", "All fan profiles have been tested.", false);
+                // Radar will stop when they click OK (which calls stopTest)
                 return;
             }
-            const fIdx = document.getElementById('test-fan-pin').value;
+            const fIdx = document.getElementById('test-profile') ? 0 : 0; // Or whatever logic you use for fan target in auto
             const p = allProfiles[autoTestIndex];
             const vals = p.val.split(',');
-            
-            document.getElementById('test-status-text').innerText = `Auto Sequence (${autoTestIndex+1}/${allProfiles.length}):\n${p.name}`;
+
+            document.getElementById('log-text').innerHTML = `<div class="log-dot"></div> Scanning: ${p.name}`;
+
             sendCmd(`T:${fIdx},${vals[0]},${vals[1]}`);
-            document.getElementById('test-feedback').style.display = 'block';
+
+            showModal(`Testing: ${p.name}`, "Is the fan running smoothly?", true);
         }
 
         function feedbackYes() {
-            if(autoTestIndex !== -1) alert(`Great! Your fan is: ${allProfiles[autoTestIndex].name}`);
-            else alert('Great! The manually selected profile works.');
-            stopTest();
+            showModal("Success!", `Great! Your fan is configured for:\n${allProfiles[autoTestIndex].name}`, false);
         }
 
         function feedbackNo() {
-            if(autoTestIndex !== -1) {
-                autoTestIndex++;
-                runAutoTestStep();
-            } else {
-                alert('Try reversing polarity or selecting another model manually.');
-                stopTest();
-            }
+            autoTestIndex++;
+            runAutoTestStep();
         }
 
         function stopTest() {
+            clearInterval(manualRampInterval);
             autoTestIndex = -1;
-            sendCmd(`X:`);
+            sendCmd("X:");
+
+            // Reset Radar
+            document.getElementById('radar-container').classList.remove('active');
+            document.getElementById('radar-title').innerText = "Click to Start Auto Detect";
+            document.getElementById('radar-subtitle').innerText = "Testing each fan type one by one.";
+            document.getElementById('log-text').innerHTML = `<div class="log-dot"></div> Waiting to start...`;
+
+            // Reset Modal
+            document.getElementById('modal-overlay').style.display = 'none';
             document.getElementById('test-feedback').style.display = 'none';
+
+            // Reset PWM Box
+            const box = document.getElementById('pwm-status-box');
+            box.classList.remove('active-manual');
+            box.style.borderColor = 'var(--border-main)';
+            document.getElementById('pwm-status-title').style.color = 'var(--text-muted)';
+            document.getElementById('pwm-status-msg').innerText = "Standby";
+            document.getElementById('pwm-status-msg').style.color = 'var(--text-muted)';
+            document.getElementById('pwm-status-sub').innerText = `Ready for test`;
         }
     </script>
 </body>
+
 </html>
