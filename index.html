@@ -1322,7 +1322,7 @@
         renderDashboardSliders();
 
         // UUIDs
-        const serviceUuid = "4fafc202-1fb5-459e-8fcc-c5c9c331914b";
+        const serviceUuid = "4fafc203-1fb5-459e-8fcc-c5c9c331914b";
         const charCmdUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
         const charAdcUuid = "9b1c7130-9b49-411a-ab57-37c26fb43015";
 
@@ -1364,8 +1364,9 @@
                 bleBtn.innerText = "Connected";
                 bleBtn.classList.add('connected');
                 
-                // Request saved rules from ESP32
-                sendCmd("S:");
+                // Small delay to allow BLE notification subscriptions to fully establish
+                // before sending the sync request, preventing a race condition
+                setTimeout(() => sendCmd("S:"), 500);
             } catch (err) {
                 console.error(err);
                 bleBtn.innerText = "Failed";
@@ -1375,8 +1376,16 @@
 
         async function sendCmd(cmdStr) {
             if (!charCmd) return;
-            try { await charCmd.writeValue(new TextEncoder().encode(cmdStr)); console.log("BLE SENT:", cmdStr); }
-            catch (e) { console.error(e); }
+            try { 
+                // Try without-response first (faster, no ack timeout issues)
+                if (charCmd.properties.writeWithoutResponse) {
+                    await charCmd.writeValueWithoutResponse(new TextEncoder().encode(cmdStr));
+                } else {
+                    await charCmd.writeValue(new TextEncoder().encode(cmdStr));
+                }
+                console.log("BLE SENT:", cmdStr); 
+            }
+            catch (e) { console.error("BLE write error:", cmdStr, e); }
         }
 
         function handleTelemetry(e) {
