@@ -1157,6 +1157,9 @@
             container.innerHTML = html;
         }
 
+        // Throttle map: one pending timer per fan index to rate-limit BLE slider commands
+        const overrideThrottle = {};
+
         function updateOverride(fanIdx, val) {
             document.getElementById(`val-override-${fanIdx}`).innerText = val + '%';
             
@@ -1169,10 +1172,13 @@
             savedSliders[fanIdx] = parseInt(val);
             localStorage.setItem('fanSliders', JSON.stringify(savedSliders));
 
-            // Scale 0-100% to 0-255 for the ESP32
-            let pwmVal = Math.round((val / 100) * 255);
-            sendCmd(`M:${fanIdx}:${pwmVal}`);
-            logMsg(`Overriding Fan ${fanIdx} to ${val}% (${pwmVal} PWM)`);
+            // Throttle BLE sends to at most once every 80ms per fan (prevents queue flooding)
+            clearTimeout(overrideThrottle[fanIdx]);
+            overrideThrottle[fanIdx] = setTimeout(() => {
+                let pwmVal = Math.round((val / 100) * 255);
+                sendCmd(`M:${fanIdx}:${pwmVal}`);
+                logMsg(`Override Fan ${fanIdx} -> ${val}% (PWM ${pwmVal})`);
+            }, 80);
         }
 
         // UI RENDERERS
