@@ -902,7 +902,7 @@
             appearance: none;
             background-color: var(--bg-input);
             color: var(--text-main);
-            border: 1px solid var(--border-light);
+            border: 1px solid transparent;
             padding: 0.6rem 2rem 0.6rem 1rem;
             border-radius: 8px;
             font-size: 0.9rem;
@@ -984,8 +984,7 @@
                     <div class="mode-toggles">
                         <button class="auto-btn active" id="btn-mode-2" onclick="setSysMode(2)">2 FANS</button>
                         <button class="auto-btn" id="btn-mode-4" onclick="setSysMode(4)">4 FANS</button>
-                        <button class="auto-btn"
-                            style="grid-column: span 2; background: var(--accent-blue); color: #fff;"
+                        <button class="auto-btn" style="grid-column: span 2; background: #312C51; color: white;"
                             onclick="toggleDiagnostics()">⚙️ DIAGNOSTICS</button>
                     </div>
                 </div>
