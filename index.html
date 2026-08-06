@@ -1478,9 +1478,17 @@
                 // Convert ADC (0-4095, 3.3V ref) to voltage
                 const toVolts = (adc) => ((adc / 4095) * 3.3).toFixed(2);
 
-                // Simple NTC approximation for coolant: map 0-4095 to 0-150 °C
-                // (Tune the slope once you have the actual sensor curve)
-                const toTemp = (adc) => Math.round((adc / 4095) * 150);
+                // Steinhart-Hart equation derived from calibration data (40°C - 100°C)
+                const toTemp = (adc) => {
+                    if (adc <= 0 || adc >= 4095) return "--"; // Prevent log(0) or division by zero
+                    const L = Math.log(adc / (4095.0 - adc));
+                    // Coefficients calculated using 3-point Steinhart-Hart curve fit
+                    const A = 0.003215528;
+                    const B = 0.000232600;
+                    const C = 0.000001749;
+                    const invT = A + B * L + C * Math.pow(L, 3);
+                    return Math.round((1.0 / invT) - 273.15);
+                };
 
                 document.getElementById('sens-temp1').innerText = toTemp(adc0) + " °C";
                 document.getElementById('sens-temp2').innerText = toTemp(adc1) + " °C";
