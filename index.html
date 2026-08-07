@@ -1289,25 +1289,25 @@
                 html2 += '<tr>';
                 html2 += '<td><button class="btn-icon" onclick="removeStage(' + i + ')" title="Remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>';
                 html2 += '<td><div class="stage-label">' + (i + 1) + '</div></td>';
-                html2 += '<td><select class="modern-select" onchange="updateStageField(' + i + ', \"targetFan\", this.value)">';
+                html2 += '<td><select class="modern-select" onchange="updateStageField(' + i + ', \\\'targetFan\\\', this.value)">';
                 for (let f = 1; f <= sysMode; f++) {
                     html2 += '<option value="' + (f-1) + '" ' + (st.targetFan == (f-1) ? 'selected' : '') + '>Fan ' + f + '</option>';
                 }
                 html2 += '</select></td>';
-                html2 += '<td><div class="input-group"><input type="number" value="' + st.spd + '" min="0" max="100" onchange="updateStageField(' + i + ', \"spd\", this.value)"> %</div></td>';
-                html2 += '<td><div class="input-group"><select class="modern-select" onchange="updateStageField(' + i + ', \"sens\", this.value)">';
+                html2 += '<td><div class="input-group"><input type="number" value="' + st.spd + '" min="0" max="100" onchange="updateStageField(' + i + ', \\\'spd\\\', this.value)"> %</div></td>';
+                html2 += '<td><div class="input-group"><select class="modern-select" onchange="updateStageField(' + i + ', \\\'sens\\\', this.value)">';
                 const sensorNames = ['Coolant 1', 'Coolant 2', 'Speedo', 'ECM', 'AC'];
                 sensorNames.forEach((name, si) => {
                     html2 += '<option value="' + si + '" ' + (st.sens == si ? 'selected' : '') + '>' + name + '</option>';
                 });
                 html2 += '</select>';
                 if (st.sens == 4) {
-                    html2 += '<select class="modern-select" onchange="updateStageField(' + i + ', \"val\", this.value)">';
+                    html2 += '<select class="modern-select" onchange="updateStageField(' + i + ', \\\'val\\\', this.value)">';
                     html2 += '<option value="1" ' + (st.val == 1 ? 'selected' : '') + '>ON</option>';
                     html2 += '<option value="0" ' + (st.val == 0 ? 'selected' : '') + '>OFF</option>';
                     html2 += '</select>';
                 } else {
-                    html2 += '<input type="number" value="' + st.val + '" min="0" max="200" onchange="updateStageField(' + i + ', \"val\", this.value)">';
+                    html2 += '<input type="number" value="' + st.val + '" min="0" max="200" onchange="updateStageField(' + i + ', \\\'val\\\', this.value)">';
                 }
                 html2 += '</div></td></tr>';
             });
@@ -1461,15 +1461,6 @@
             isSync = true;
             document.getElementById('btn-sync').classList.add('active');
             document.getElementById('btn-indep').classList.remove('active');
-            // When syncing, copy Fan 1's settings to all other fans immediately
-            stages.forEach(st => {
-                for (let f = 2; f <= sysMode; f++) {
-                    st[`f${f}`].spd = st.f1.spd;
-                    st[`f${f}`].sens = st.f1.sens;
-                    st[`f${f}`].val = st.f1.val;
-                }
-            });
-            renderStageTable();
             sendCmd("A:1");
         });
         document.getElementById('btn-indep').addEventListener('click', () => {
@@ -1482,22 +1473,36 @@
 
         // SAVE STAGES -> GENERATE M: COMMANDS
         async function saveStages() {
-            let ruleIdx = 0;
-            for (let i = 0; i < stages.length; i++) {
-                for (let f = 1; f <= sysMode; f++) {
-                    const fanData = stages[i][`f${f}`];
-                    if (fanData.spd > 0) {
-                        let pwm = Math.floor((fanData.spd / 100) * 255);
-                        await sendCmd(`M:${ruleIdx},${fanData.sens},0,${fanData.val},${f - 1},${pwm}`);
-                        ruleIdx++;
-                        if (ruleIdx >= 10) break;
+            const btn = document.getElementById('save-stages-btn');
+            if (!btn) return;
+            const orig = btn.innerText;
+            btn.innerText = "SAVING...";
+            
+            try {
+                // First, clear all existing stages on the ESP32
+                await sendCmd("C:ALL");
+                // Wait a bit to ensure the ESP32 processed the clear
+                await new Promise(r => setTimeout(r, 200));
+
+                let savedCount = 0;
+                for (let i = 0; i < stages.length; i++) {
+                    const st = stages[i];
+                    if (st.spd > 0) {
+                        let pwm = Math.floor((st.spd / 100) * 255);
+                        // format: M:stageIdx,fanIdx,sens,condVal,pwm
+                        await sendCmd(`M:${savedCount},${st.targetFan},${st.sens},${st.val},${pwm}`);
+                        savedCount++;
+                        if (savedCount >= 10) {
+                            alert("Note: Maximum 10 rules saved to ESP32.");
+                            break;
+                        }
                     }
                 }
-                if (ruleIdx >= 10) break;
+            } catch (err) {
+                console.error("Save error:", err);
             }
-
-            for (let i = ruleIdx; i < 10; i++) await sendCmd(`C:${i}`);
-            if (ruleIdx >= 10) alert("Note: Maximum 10 rules saved to ESP32.");
+            
+            btn.innerText = orig;
         }
 
         // TESTER LOGIC
