@@ -1047,8 +1047,6 @@
             ">x</button>
             <h2 style="color:#312C51; margin-bottom:1rem; font-weight:800;">Diagnostics & Configuration</h2>
 
-            <div id="diag-sliders-overlay" style="margin-bottom:1.5rem;"></div>
-
             <div class="panel" style="box-shadow:none; border:1px solid rgba(49,44,81,0.1); padding:1.5rem;">
                 <div class="panel-header" style="margin-bottom:1rem;">TESTING & DIAGNOSTICS</div>
                 <div class="diag-split">
@@ -1648,32 +1646,6 @@
             const overlay = document.getElementById('diagnostics-overlay');
             const isVisible = overlay.style.display === 'block' || overlay.style.display === 'flex';
             overlay.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) {
-                // Render sliders inside the overlay
-                const container = document.getElementById('diag-sliders-overlay');
-                let sliderHtml = '<div style="font-weight:700; color:#312C51; font-size:0.9rem; margin-bottom:1rem; text-transform:uppercase; letter-spacing:1px;">Manual Fan Overrides</div>';
-                sliderHtml += '<div style="display:flex; flex-direction:column; gap:0.75rem;">';
-                for (let i = 1; i <= sysMode; i++) {
-                    sliderHtml += '<div class="override-card">'
-                        + '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">'
-                        + '<div style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">FAN ' + i + ' SPEED</div>'
-                        + '<div style="font-weight:700; color:var(--accent-blue); font-size:0.9rem;" id="val-ov2-' + i + '">0%</div>'
-                        + '</div>'
-                        + '<input type="range" class="premium-slider" min="0" max="100" value="0"'
-                        + ' oninput="updateOverride2(' + i + ', this.value)"'
-                        + ' style="background: linear-gradient(to right, #312C51 0%, rgba(49,44,81,0.15) 0%);">'
-                        + '</div>';
-                }
-                sliderHtml += '</div>';
-                container.innerHTML = sliderHtml;
-            }
-        }
-
-        function updateOverride2(fanIdx, val) {
-            const lbl = document.getElementById('val-ov2-' + fanIdx);
-            if (lbl) lbl.innerText = val + '%';
-            let pwmVal = Math.round((val / 100) * 255);
-            sendCmd('M:' + fanIdx + ':' + pwmVal);
         }
 
         function showToast(msg) {
