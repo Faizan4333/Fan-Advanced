@@ -774,7 +774,7 @@
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-            z-index: 100;
+            z-index: 2001;
             text-align: center;
             display: none;
             min-width: 350px;
@@ -787,7 +787,7 @@
             right: 0;
             bottom: 0;
             background: rgba(0, 0, 0, 0.3);
-            z-index: 99;
+            z-index: 2000;
             display: none;
         }
 
@@ -995,8 +995,8 @@
     </main>
 
     <!-- Modal overlay for tester feedback -->
-    <div class="modal-overlay" id="modal-overlay"></div>
-    <div id="test-feedback">
+    <div class="modal-overlay" id="modal-overlay" style="z-index: 2000;"></div>
+    <div id="test-feedback" style="z-index: 2001;">
         <h3 style="color:var(--accent-blue); margin-bottom:0.5rem; font-size:1.5rem;" id="modal-title">Testing
             Profile...</h3>
         <p style="font-size:1.1rem; margin-bottom:2rem; color:var(--text-muted);" id="modal-desc">Is the fan running
@@ -1406,18 +1406,26 @@
                 });
 
                 bleBtn.innerText = "Connecting...";
-                const server = await device.gatt.connect();
+                                const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(serviceUuid);
 
                 charCmd = await service.getCharacteristic(charCmdUuid);
                 charAdc = await service.getCharacteristic(charAdcUuid);
 
+                await charCmd.startNotifications();
+                charCmd.addEventListener('characteristicvaluechanged', handleCmdNotify);
+
                 await charAdc.startNotifications();
                 charAdc.addEventListener('characteristicvaluechanged', handleTelemetry);
 
                 isConnected = true;
-                bleBtn.innerText = "Connected";
+                bleBtn.innerText = "Disconnect";
                 bleBtn.classList.add('connected');
+                
+                // Request sync data instantly
+                await sendCmd("S:");
+                // Request sync data again after 500ms just in case ESP was busy
+                setTimeout(() => { sendCmd("S:"); }, 500);
             } catch (err) {
                 console.error(err);
                 bleBtn.innerText = "Failed";
