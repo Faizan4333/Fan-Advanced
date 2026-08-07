@@ -1267,7 +1267,8 @@
         }
 
         function updateStageField(idx, field, val) {
-            stages[idx][field] = parseFloat(val);
+            const num = parseFloat(val);
+            stages[idx][field] = isNaN(num) ? 0 : num;
             if (field === 'sens') {
                 stages[idx].val = (val == 4) ? 1 : 0;
                 renderStageTable();
@@ -1278,30 +1279,39 @@
             const table = document.getElementById('stage-table');
             let html2 = '<thead><tr><th></th><th>Stage</th><th>Target Fan</th><th>Fan Speed</th><th>Trigger Condition</th></tr></thead><tbody>';
             stages.forEach((st, i) => {
-                html2 += '<tr>';
-                html2 += '<td><button class="btn-icon" onclick="removeStage(' + i + ')" title="Remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>';
-                html2 += '<td><div class="stage-label">' + (i + 1) + '</div></td>';
-                html2 += '<td><select class="modern-select" onchange="updateStageField(' + i + ', \\\'targetFan\\\', this.value)">';
+                html2 += `
+                    <tr>
+                        <td><button class="btn-icon" onclick="removeStage(${i})" title="Remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>
+                        <td><div class="stage-label">${i + 1}</div></td>
+                        <td>
+                            <select class="modern-select" onchange="updateStageField(${i}, 'targetFan', this.value)">
+                `;
                 for (let f = 1; f <= sysMode; f++) {
-                    html2 += '<option value="' + (f-1) + '" ' + (st.targetFan == (f-1) ? 'selected' : '') + '>Fan ' + f + '</option>';
+                    html2 += `<option value="${f - 1}" ${st.targetFan == (f - 1) ? 'selected' : ''}>Fan ${f}</option>`;
                 }
-                html2 += '</select></td>';
-                html2 += '<td><div class="input-group"><input type="number" value="' + st.spd + '" min="0" max="100" onchange="updateStageField(' + i + ', \\\'spd\\\', this.value)"> %</div></td>';
-                html2 += '<td><div class="input-group"><select class="modern-select" onchange="updateStageField(' + i + ', \\\'sens\\\', this.value)">';
+                html2 += `
+                            </select>
+                        </td>
+                        <td><div class="input-group"><input type="number" value="${st.spd}" min="0" max="100" onchange="updateStageField(${i}, 'spd', this.value)"> %</div></td>
+                        <td><div class="input-group">
+                            <select class="modern-select" onchange="updateStageField(${i}, 'sens', this.value)">
+                `;
                 const sensorNames = ['Coolant 1', 'Coolant 2', 'Speedo', 'ECM', 'AC'];
                 sensorNames.forEach((name, si) => {
-                    html2 += '<option value="' + si + '" ' + (st.sens == si ? 'selected' : '') + '>' + name + '</option>';
+                    html2 += `<option value="${si}" ${st.sens == si ? 'selected' : ''}>${name}</option>`;
                 });
-                html2 += '</select>';
+                html2 += `</select>`;
                 if (st.sens == 4) {
-                    html2 += '<select class="modern-select" onchange="updateStageField(' + i + ', \\\'val\\\', this.value)">';
-                    html2 += '<option value="1" ' + (st.val == 1 ? 'selected' : '') + '>ON</option>';
-                    html2 += '<option value="0" ' + (st.val == 0 ? 'selected' : '') + '>OFF</option>';
-                    html2 += '</select>';
+                    html2 += `
+                        <select class="modern-select" onchange="updateStageField(${i}, 'val', this.value)">
+                            <option value="1" ${st.val == 1 ? 'selected' : ''}>ON</option>
+                            <option value="0" ${st.val == 0 ? 'selected' : ''}>OFF</option>
+                        </select>
+                    `;
                 } else {
-                    html2 += '<input type="number" value="' + st.val + '" min="0" max="200" onchange="updateStageField(' + i + ', \\\'val\\\', this.value)">';
+                    html2 += `<input type="number" value="${st.val}" min="0" max="200" onchange="updateStageField(${i}, 'val', this.value)">`;
                 }
-                html2 += '</div></td></tr>';
+                html2 += `</div></td></tr>`;
             });
             html2 += '</tbody>';
             table.innerHTML = html2;
