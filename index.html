@@ -1181,14 +1181,6 @@
 
         let stages = [];
 
-        function initDefaultStages() {
-            stages = [
-                { f1: { spd: 30, sens: 0, val: 40 }, f2: { spd: 30, sens: 0, val: 40 }, f3: { spd: 30, sens: 0, val: 40 }, f4: { spd: 30, sens: 0, val: 40 } },
-                { f1: { spd: 50, sens: 0, val: 70 }, f2: { spd: 50, sens: 0, val: 70 }, f3: { spd: 50, sens: 0, val: 70 }, f4: { spd: 50, sens: 0, val: 70 } }
-            ];
-        }
-        initDefaultStages();
-
         // CLOCK
         setInterval(() => {
             const now = new Date();
@@ -1435,6 +1427,10 @@
                 bleBtn.innerText = "Disconnect";
                 bleBtn.classList.add('connected');
                 
+                // Clear local stages before requesting sync from ESP32
+                stages = [];
+                renderStageTable();
+                
                 // Request sync data instantly
                 await sendCmd("S:");
                 // Request sync data again after 500ms just in case ESP was busy
@@ -1511,8 +1507,10 @@
                         }
                     }
                 }
+                showToast("Stages Saved!");
             } catch (err) {
                 console.error("Save error:", err);
+                showToast("Error Saving");
             }
             
             btn.innerText = orig;
