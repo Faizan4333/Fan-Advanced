@@ -1364,13 +1364,26 @@
                     return;
                 }
                 const p = data.split(',');
-                if (p.length === 5) {
-                    const stageIdx = parseInt(p[0]);
-                    const fanIdx   = parseInt(p[1]);
-                    const sens     = parseInt(p[2]);
-                    const condVal  = parseInt(p[3]);
-                    const pwm      = parseInt(p[4]);
-                    const spd      = Math.round((pwm / 255) * 100);
+                if (p.length === 5 || p.length === 6) {
+                    let stageIdx, fanIdx, sens, condVal, pwm;
+                    
+                    if (p.length === 5) {
+                        // New format: R:stageIdx,fanIdx,sens,val,pwm
+                        stageIdx = parseInt(p[0]);
+                        fanIdx   = parseInt(p[1]);
+                        sens     = parseInt(p[2]);
+                        condVal  = parseInt(p[3]);
+                        pwm      = parseInt(p[4]);
+                    } else {
+                        // Old format: R:stageIdx,sens,0,val,fanIdx,pwm
+                        stageIdx = parseInt(p[0]);
+                        sens     = parseInt(p[1]);
+                        condVal  = parseInt(p[3]);
+                        fanIdx   = parseInt(p[4]);
+                        pwm      = parseInt(p[5]);
+                    }
+
+                    const spd = Math.round((pwm / 255) * 100);
                     while (stages.length <= stageIdx) stages.push({ targetFan: 0, spd: 0, sens: 0, val: 0 });
                     stages[stageIdx] = { targetFan: fanIdx, spd: spd, sens: sens, val: condVal };
                 }
