@@ -936,6 +936,10 @@
                 <div class="status-label">🚗 ECM Voltage</div>
                 <div class="status-val" id="sens-ecm">-- V</div>
             </div>
+            <div class="status-row">
+                <div class="status-label">📈 0-5V Signal</div>
+                <div class="status-val" id="sens-signal">-- V</div>
+            </div>
 
             <div id="dashboard-sliders" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
                 <!-- Filled dynamically by JS -->
@@ -1217,10 +1221,9 @@
             const slider = document.getElementById(`slider-override-${fanIdx}`);
             slider.style.background = `linear-gradient(to right, #312C51 ${val}%, rgba(49, 44, 81, 0.15) ${val}%)`;
 
-            // Scale 0-100% to 0-255 for the ESP32
-            let pwmVal = Math.round((val / 100) * 255);
-            sendCmd(`M:${fanIdx}:${pwmVal}`);
-            logMsg(`Overriding Fan ${fanIdx} to ${val}% (${pwmVal} PWM)`);
+            // Send 0-100% to the ESP32 directly instead of calculating PWM
+            sendCmd(`M:${fanIdx}:${val}`);
+            logMsg(`Overriding Fan ${fanIdx} to ${val}%`);
         }
 
         // UI RENDERERS
@@ -1459,17 +1462,20 @@
         function handleTelemetry(e) {
             const val = new TextDecoder().decode(e.target.value);
             const p = val.split(',');
-            if (p.length >= 5) {
+            if (p.length >= 6) {
                 // ESP32 sends temperature already in Celsius
                 const t1 = parseFloat(p[0]);
                 const t2 = parseFloat(p[1]);
-                document.getElementById('sens-temp1').innerText = isNaN(t1) ? "--" : t1.toFixed(1) + " C";
-                document.getElementById('sens-temp2').innerText = isNaN(t2) ? "--" : t2.toFixed(1) + " C";
+                document.getElementById('sens-temp1').innerText = isNaN(t1) ? "--" : t1.toFixed(1) + " °C";
+                document.getElementById('sens-temp2').innerText = isNaN(t2) ? "--" : t2.toFixed(1) + " °C";
                 document.getElementById('sens-speedo').innerText = parseFloat(p[2]).toFixed(1) + " V";
                 document.getElementById('sens-ecm').innerText = parseFloat(p[3]).toFixed(1) + " V";
+                
                 const ac = document.getElementById('sens-ac');
                 if (p[4] === "1") { ac.innerText = "ON"; ac.className = "status-val val-ac"; }
                 else { ac.innerText = "OFF"; ac.className = "status-val val-ac off"; }
+                
+                document.getElementById('sens-signal').innerText = parseFloat(p[5]).toFixed(2) + " V";
             }
         }
 
@@ -1505,9 +1511,8 @@
                 for (let i = 0; i < stages.length; i++) {
                     const st = stages[i];
                     if (st.spd > 0) {
-                        let pwm = Math.floor((st.spd / 100) * 255);
-                        // format: M:stageIdx,fanIdx,sens,condVal,pwm
-                        await sendCmd(`M:${savedCount},${st.targetFan},${st.sens},${st.val},${pwm}`);
+                        // format: M:stageIdx,fanIdx,sens,condVal,spd (percent)
+                        await sendCmd(`M:${savedCount},${st.targetFan},${st.sens},${st.val},${st.spd}`);
                         savedCount++;
                         if (savedCount >= 10) {
                             alert("Note: Maximum 10 rules saved to ESP32.");
