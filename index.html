@@ -1200,9 +1200,9 @@
                     <div class="override-card">
                         <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
                             <div style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">FAN ${i} SPEED</div>
-                            <div style="color:var(--accent-blue); font-weight:800; font-size:0.9rem;" id="val-override-${i}">0%</div>
+                            <div style="color:var(--accent-blue); font-weight:800; font-size:0.9rem;" id="val-override-${i}">AUTO</div>
                         </div>
-                        <input type="range" class="premium-slider" id="slider-override-${i}" min="0" max="100" value="0" oninput="updateOverride(${i}, this.value)" style="background: linear-gradient(to right, #312C51 0%, rgba(49, 44, 81, 0.15) 0%);">
+                        <input type="range" class="premium-slider" id="slider-override-${i}" min="-1" max="100" value="-1" oninput="updateOverride(${i}, this.value)" style="background: linear-gradient(to right, #312C51 0%, rgba(49, 44, 81, 0.15) 0%);">
                     </div>
                 `;
             }
@@ -1210,16 +1210,30 @@
             container.innerHTML = html;
         }
 
-        function updateOverride(fanIdx, val) {
-            document.getElementById(`val-override-${fanIdx}`).innerText = val + '%';
-            
-            // Fill slider background up to the current value
-            const slider = document.getElementById(`slider-override-${fanIdx}`);
-            slider.style.background = `linear-gradient(to right, #312C51 ${val}%, rgba(49, 44, 81, 0.15) ${val}%)`;
+        let sliderTimeout = [null, null, null, null];
 
-            // Send 0-100% to the ESP32 directly instead of calculating PWM
-            sendCmd(`M:${fanIdx}:${val}`);
-            logMsg(`Overriding Fan ${fanIdx} to ${val}%`);
+        function updateOverride(fanIdx, val) {
+            val = parseInt(val);
+            const slider = document.getElementById(`slider-override-${fanIdx}`);
+            
+            if (val === -1) {
+                document.getElementById(`val-override-${fanIdx}`).innerText = 'AUTO';
+                slider.style.background = `rgba(49, 44, 81, 0.15)`;
+            } else {
+                document.getElementById(`val-override-${fanIdx}`).innerText = val + '%';
+                
+                // Map -1 to 100 range for the visual slider gradient fill
+                let fillPct = ((val + 1) / 101) * 100;
+                slider.style.background = `linear-gradient(to right, #312C51 ${fillPct}%, rgba(49, 44, 81, 0.15) ${fillPct}%)`;
+            }
+
+            // Debounce BLE sending to prevent queue overflow on fast slider dragging
+            if (sliderTimeout[fanIdx]) clearTimeout(sliderTimeout[fanIdx]);
+            sliderTimeout[fanIdx] = setTimeout(() => {
+                sendCmd(`M:${fanIdx}:${val}`);
+                if (val === -1) logMsg(`Fan ${fanIdx} returned to AUTO`);
+                else logMsg(`Overriding Fan ${fanIdx} to ${val}%`);
+            }, 100);
         }
 
         // UI RENDERERS
