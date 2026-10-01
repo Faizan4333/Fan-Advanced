@@ -1314,7 +1314,7 @@
                 html2 += `
                             </select>
                         </td>
-                        <td><div class="input-group"><input type="number" value="${st.spd}" min="0" max="100" onchange="updateStageField(${i}, 'spd', this.value)"> %</div></td>
+                        <td><div class="input-group"><input type="number" id="stage-spd-${i}" value="${st.spd}" min="0" max="100" onchange="updateStageField(${i}, 'spd', this.value)"> %</div></td>
                         <td><div class="input-group">
                             <select class="modern-select" onchange="updateStageField(${i}, 'sens', this.value)">
                 `;
@@ -1354,9 +1354,14 @@
                 const st = stages[i];
                 
                 // Force read the input field directly to prevent "onchange" race conditions
+                // Force read BOTH input fields directly to prevent browser race conditions
                 const valInput = document.getElementById('stage-val-' + i);
                 if (valInput && valInput.value !== '') {
                     st.val = parseFloat(valInput.value);
+                }
+                const spdInput = document.getElementById('stage-spd-' + i);
+                if (spdInput && spdInput.value !== '') {
+                    st.spd = parseInt(spdInput.value);
                 }
                 
                 let pwm = st.spd; // ESP32 now universally expects 0-100% scale
@@ -1365,6 +1370,8 @@
                     // Convert UI Voltage back to Raw ADC before sending to ESP32
                     finalVal = getEcmAdcFromVoltage(parseFloat(st.val));
                 }
+                if (isNaN(finalVal) || finalVal === null) { finalVal = 0; }
+                if (isNaN(pwm) || pwm === null) { pwm = 0; }
                 await sendCmd("M:" + i + "," + st.targetFan + "," + st.sens + "," + Math.round(finalVal) + "," + pwm);
                 await new Promise(r => setTimeout(r, 30));
             }
