@@ -857,10 +857,12 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .modern-select:focus {
             outline: none;
             border-color: var(--accent-green);
         }
+
         .toast {
             position: fixed;
             bottom: 2rem;
@@ -876,11 +878,11 @@
             pointer-events: none;
             z-index: 9999;
         }
+
         .toast.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
-
     </style>
 </head>
 
@@ -936,6 +938,14 @@
                 <div class="status-label">🚗 ECM Voltage</div>
                 <div class="status-val" id="sens-ecm">-- V</div>
             </div>
+            <div class="status-row" style="padding-right: 0.5rem;">
+                <div class="status-label">⚡ C2 Power Output</div>
+                <select id="cfg-c2power" class="modern-select" onchange="sendCmd('P:' + this.value)"
+                    style="padding:0.25rem 0.5rem; background:transparent;">
+                    <option value="1">ON (3.3V)</option>
+                    <option value="0">OFF (0V)</option>
+                </select>
+            </div>
 
             <div id="dashboard-sliders" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
                 <!-- Filled dynamically by JS -->
@@ -962,8 +972,9 @@
                         1x FAN EACH
                     </div>
                 </div>
-            <div style="margin-top:0.75rem;">
-                    <div onclick="toggleDiagnostics()" style="width:100%; text-align:center; cursor:pointer; padding:0.75rem; background:#312C51; color:white; border-radius:12px; font-weight:700; font-size:0.85rem;">
+                <div style="margin-top:0.75rem;">
+                    <div onclick="toggleDiagnostics()"
+                        style="width:100%; text-align:center; cursor:pointer; padding:0.75rem; background:#312C51; color:white; border-radius:12px; font-weight:700; font-size:0.85rem;">
                         DIAGNOSTICS
                     </div>
                 </div>
@@ -1167,8 +1178,8 @@
                 </div>
             </div>
 
-            </div>
         </div>
+    </div>
     </div>
 
     <script>
@@ -1215,13 +1226,13 @@
         function updateOverride(fanIdx, val) {
             val = parseInt(val);
             const slider = document.getElementById(`slider-override-${fanIdx}`);
-            
+
             if (val === -1) {
                 document.getElementById(`val-override-${fanIdx}`).innerText = 'AUTO';
                 slider.style.background = `rgba(49, 44, 81, 0.15)`;
             } else {
                 document.getElementById(`val-override-${fanIdx}`).innerText = val + '%';
-                
+
                 // Map -1 to 100 range for the visual slider gradient fill
                 let fillPct = ((val + 1) / 101) * 100;
                 slider.style.background = `linear-gradient(to right, #312C51 ${fillPct}%, rgba(49, 44, 81, 0.15) ${fillPct}%)`;
@@ -1369,6 +1380,13 @@
                 return;
             }
 
+            if (val.startsWith("P:")) {
+                const c2p = val.substring(2);
+                const el = document.getElementById('cfg-c2power');
+                if (el) el.value = c2p;
+                return;
+            }
+
             if (val.startsWith("R:")) {
                 const data = val.substring(2);
                 if (data === "END") {
@@ -1379,21 +1397,21 @@
                 const p = data.split(',');
                 if (p.length === 5 || p.length === 6) {
                     let stageIdx, fanIdx, sens, condVal, pwm;
-                    
+
                     if (p.length === 5) {
                         // New format: R:stageIdx,fanIdx,sens,val,pwm
                         stageIdx = parseInt(p[0]);
-                        fanIdx   = parseInt(p[1]);
-                        sens     = parseInt(p[2]);
-                        condVal  = parseInt(p[3]);
-                        pwm      = parseInt(p[4]);
+                        fanIdx = parseInt(p[1]);
+                        sens = parseInt(p[2]);
+                        condVal = parseInt(p[3]);
+                        pwm = parseInt(p[4]);
                     } else {
                         // Old format: R:stageIdx,sens,0,val,fanIdx,pwm
                         stageIdx = parseInt(p[0]);
-                        sens     = parseInt(p[1]);
-                        condVal  = parseInt(p[3]);
-                        fanIdx   = parseInt(p[4]);
-                        pwm      = parseInt(p[5]);
+                        sens = parseInt(p[1]);
+                        condVal = parseInt(p[3]);
+                        fanIdx = parseInt(p[4]);
+                        pwm = parseInt(p[5]);
                     }
 
                     const spd = Math.round((pwm / 255) * 100);
@@ -1405,10 +1423,10 @@
 
 
 
-                // BLE LOGIC
-                const serviceUuid = "4fafc203-1fb5-459e-8fcc-c5c9c331914b";
-                const charCmdUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-                const charAdcUuid = "9b1c7130-9b49-411a-ab57-37c26fb43015";
+        // BLE LOGIC
+        const serviceUuid = "4fafc203-1fb5-459e-8fcc-c5c9c331914b";
+        const charCmdUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+        const charAdcUuid = "9b1c7130-9b49-411a-ab57-37c26fb43015";
 
         let device, charCmd, charAdc;
         let isConnected = false;
@@ -1432,7 +1450,7 @@
                 });
 
                 bleBtn.innerText = "Connecting...";
-                                const server = await device.gatt.connect();
+                const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(serviceUuid);
 
                 charCmd = await service.getCharacteristic(charCmdUuid);
@@ -1447,11 +1465,11 @@
                 isConnected = true;
                 bleBtn.innerText = "Disconnect";
                 bleBtn.classList.add('connected');
-                
+
                 // Clear local stages before requesting sync from ESP32
                 stages = [];
                 renderStageTable();
-                
+
                 // Request sync data instantly
                 await sendCmd("S:");
                 // Request sync data again after 500ms just in case ESP was busy
@@ -1478,16 +1496,20 @@
                 const t2 = parseFloat(p[1]);
                 document.getElementById('sens-temp1').innerText = isNaN(t1) ? "--" : t1.toFixed(1) + " °C";
                 document.getElementById('sens-temp2').innerText = isNaN(t2) ? "--" : t2.toFixed(1) + " °C";
-                document.getElementById('sens-speedo').innerText = parseFloat(p[2]).toFixed(1) + " V";
-                document.getElementById('sens-ecm').innerText = parseFloat(p[3]).toFixed(2) + " V";
-                
+                // Convert raw 12-bit ADC (0-4095) to Voltage (assuming 5V max scaled to 3.3V)
+                const spdV = (parseFloat(p[2]) / 4095.0) * 5.0;
+                const ecmV = (parseFloat(p[3]) / 4095.0) * 5.0;
+
+                document.getElementById('sens-speedo').innerText = spdV.toFixed(2) + " V";
+                document.getElementById('sens-ecm').innerText = ecmV.toFixed(2) + " V";
+
                 const ac = document.getElementById('sens-ac');
                 if (p[4] === "1") { ac.innerText = "ON"; ac.className = "status-val val-ac"; }
                 else { ac.innerText = "OFF"; ac.className = "status-val val-ac off"; }
             }
         }
 
-                // MODE TOGGLES
+        // MODE TOGGLES
         document.getElementById('btn-sync').addEventListener('click', () => {
             isSync = true;
             document.getElementById('btn-sync').classList.add('active');
@@ -1508,7 +1530,7 @@
             if (!btn) return;
             const orig = btn.innerText;
             btn.innerText = "SAVING...";
-            
+
             try {
                 // First, clear all existing stages on the ESP32
                 await sendCmd("C:ALL");
@@ -1533,7 +1555,7 @@
                 console.error("Save error:", err);
                 showToast("Error Saving");
             }
-            
+
             btn.innerText = orig;
         }
 
@@ -1564,7 +1586,7 @@
             autoTestIndex = -1;
             const fIdx = document.getElementById('manual-fan-target').value;
             const freq = document.getElementById('manual-freq').value;
-            
+
             clearInterval(manualRampInterval);
             currentManualSpd = 0;
 
@@ -1575,7 +1597,7 @@
             document.getElementById('pwm-status-title').style.color = 'var(--accent-green)';
             document.getElementById('pwm-status-msg').innerText = "Ramping up speed...";
             document.getElementById('pwm-status-msg').style.color = 'var(--accent-green)';
-            
+
             // Ramp from 0 to 255 over ~6.5 seconds
             manualRampInterval = setInterval(() => {
                 currentManualSpd += 2; // Increment by 2 every 50ms
@@ -1584,12 +1606,12 @@
                     clearInterval(manualRampInterval);
                     document.getElementById('pwm-status-msg').innerText = "Max Speed Reached";
                 }
-                
+
                 let duty = currentManualSpd;
                 if (polarity === 1) duty = 255 - duty; // Reverse logic if needed
 
                 sendCmd(`T:${fIdx},${freq},${duty}`);
-                
+
                 let pct = Math.floor((currentManualSpd / 255) * 100);
                 document.getElementById('pwm-status-sub').innerText = `Fan ${parseInt(fIdx) + 1} | ${freq}Hz | Power: ${pct}%`;
                 document.getElementById('log-text').innerHTML = `<div class="log-dot"></div> Manual Ramping: Fan ${parseInt(fIdx) + 1} (${pct}%)`;
