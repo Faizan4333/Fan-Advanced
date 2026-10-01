@@ -1352,7 +1352,7 @@
 
             for (let i = 0; i < stages.length; i++) {
                 const st = stages[i];
-                let pwm = Math.floor((st.spd / 100) * 255);
+                let pwm = st.spd; // ESP32 now universally expects 0-100% scale
                 let finalVal = st.val;
                 if (st.sens == 3) {
                     // Convert UI Voltage back to Raw ADC before sending to ESP32
@@ -1443,7 +1443,11 @@
                         pwm = parseInt(p[5]);
                     }
 
-                    const spd = Math.round((pwm / 255) * 100);
+                    // Backward compatibility: Old rules were saved on 0-255 scale
+                    let spd = pwm;
+                    if (pwm > 100) {
+                        spd = Math.round((pwm / 255) * 100);
+                    }
                     
                     let finalCondVal = condVal;
                     if (sens === 3) {
