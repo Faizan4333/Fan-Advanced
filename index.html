@@ -1498,7 +1498,23 @@
                 document.getElementById('sens-temp2').innerText = isNaN(t2) ? "--" : t2.toFixed(1) + " °C";
                 // Convert raw 12-bit ADC (0-4095) to Voltage (assuming 5V max scaled to 3.3V)
                 const spdV = (parseFloat(p[2]) / 4095.0) * 5.0;
-                const ecmV = (parseFloat(p[3]) / 4095.0) * 5.0;
+                
+                // Multi-point calibration for ECM
+                const rawEcmV = (parseFloat(p[3]) / 4095.0) * 5.0;
+                let ecmV = rawEcmV;
+                if (rawEcmV <= 0.05) {
+                    ecmV = 0.0;
+                } else if (rawEcmV < 0.84) {
+                    ecmV = (rawEcmV / 0.84) * 1.0;
+                } else if (rawEcmV < 1.70) {
+                    ecmV = 1.0 + ((rawEcmV - 0.84) / (1.70 - 0.84)) * 1.0;
+                } else if (rawEcmV < 2.55) {
+                    ecmV = 2.0 + ((rawEcmV - 1.70) / (2.55 - 1.70)) * 1.0;
+                } else if (rawEcmV < 3.41) {
+                    ecmV = 3.0 + ((rawEcmV - 2.55) / (3.41 - 2.55)) * 1.0;
+                } else {
+                    ecmV = 4.0 + ((rawEcmV - 3.41) / (4.59 - 3.41)) * 1.0;
+                }
 
                 document.getElementById('sens-speedo').innerText = spdV.toFixed(2) + " V";
                 document.getElementById('sens-ecm').innerText = ecmV.toFixed(2) + " V";
