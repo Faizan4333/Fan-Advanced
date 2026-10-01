@@ -1331,9 +1331,9 @@
                         </select>
                     `;
                 } else if (st.sens == 3) {
-                    html2 += `<span style="margin-right:8px; font-weight:bold; color:var(--text-dim)">&ge;</span><input type="number" step="0.1" value="${st.val}" min="0" max="5" onchange="updateStageField(${i}, 'val', this.value)"> V`;
+                    html2 += `<span style="margin-right:8px; font-weight:bold; color:var(--text-dim)">&ge;</span><input type="number" id="stage-val-${i}" step="0.1" value="${st.val}" min="0" max="5" onchange="updateStageField(${i}, 'val', this.value)"> V`;
                 } else {
-                    html2 += `<span style="margin-right:8px; font-weight:bold; color:var(--text-dim)">&ge;</span><input type="number" value="${st.val}" min="0" max="200" onchange="updateStageField(${i}, 'val', this.value)"> ${st.sens < 2 ? '&deg;C' : ''}`;
+                    html2 += `<span style="margin-right:8px; font-weight:bold; color:var(--text-dim)">&ge;</span><input type="number" id="stage-val-${i}" value="${st.val}" min="0" max="200" onchange="updateStageField(${i}, 'val', this.value)"> ${st.sens < 2 ? '&deg;C' : ''}`;
                 }
                 html2 += `</div></td></tr>`;
             });
@@ -1352,6 +1352,13 @@
 
             for (let i = 0; i < stages.length; i++) {
                 const st = stages[i];
+                
+                // Force read the input field directly to prevent "onchange" race conditions
+                const valInput = document.getElementById('stage-val-' + i);
+                if (valInput && valInput.value !== '') {
+                    st.val = parseFloat(valInput.value);
+                }
+                
                 let pwm = st.spd; // ESP32 now universally expects 0-100% scale
                 let finalVal = st.val;
                 if (st.sens == 3) {
